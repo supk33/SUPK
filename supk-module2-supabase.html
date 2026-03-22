@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUPK · บันทึกสุขภาพ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --pink:#ff6b9d;--orange:#ff8c42;--yellow:#ffd166;--green:#06d6a0;
+  --teal:#0cb4c5;--blue:#4f8ef7;--purple:#a259ff;--red:#ff4d6d;
+  --bg:#f0faf8;--white:#fff;--text:#1e293b;--muted:#64748b;
+  --border:#e2f0ec;--radius:20px;--shadow:0 4px 24px rgba(0,0,0,0.07);
+  --font:'Nunito','Noto Sans Thai',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 700px 500px at -5% 20%,rgba(6,214,160,.10) 0%,transparent 65%),
+    radial-gradient(ellipse 500px 400px at 105% 80%,rgba(79,142,247,.10) 0%,transparent 65%),
+    radial-gradient(ellipse 300px 300px at 60% 10%,rgba(255,107,157,.07) 0%,transparent 65%);
+  pointer-events:none;}
+
+/* ===== LOGIN SCREEN ===== */
+#login-screen{
+  position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#f0faf8,#e8f0ff);
+}
+.login-card{
+  background:var(--white);border-radius:28px;padding:48px 40px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.12);max-width:420px;width:90%;
+  animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+.login-bubble{width:72px;height:72px;border-radius:22px;background:linear-gradient(135deg,var(--green),var(--teal));
+  display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;
+  box-shadow:0 8px 28px rgba(6,214,160,0.4);animation:wiggle 3s ease-in-out infinite;}
+@keyframes wiggle{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.login-title{font-size:26px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px;}
+.login-title span{background:linear-gradient(90deg,var(--green),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-sub{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:32px;line-height:1.5;}
+.google-btn{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  width:100%;padding:14px;border-radius:14px;border:2px solid #e2e8f0;
+  background:var(--white);cursor:pointer;font-family:var(--font);font-size:15px;font-weight:700;
+  color:var(--text);transition:all .2s;margin-bottom:16px;
+}
+.google-btn:hover{background:#f8faff;border-color:#cbd5e1;box-shadow:0 4px 14px rgba(0,0,0,0.08);transform:translateY(-1px);}
+.google-icon{width:22px;height:22px;}
+.demo-btn{
+  width:100%;padding:12px;border-radius:14px;border:none;
+  background:linear-gradient(135deg,rgba(6,214,160,.12),rgba(12,180,197,.1));
+  color:var(--teal);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;
+  transition:all .2s;
+}
+.demo-btn:hover{background:linear-gradient(135deg,rgba(6,214,160,.2),rgba(12,180,197,.15));}
+.login-features{display:flex;gap:16px;margin-top:28px;padding-top:24px;border-top:1.5px solid var(--border);}
+.lf{flex:1;text-align:center;font-size:11px;color:var(--muted);font-weight:600;}
+.lf-ico{font-size:20px;margin-bottom:4px;}
+
+/* ===== SETUP GUIDE ===== */
+#setup-screen{
+  position:fixed;inset:0;z-index:999;display:none;overflow-y:auto;
+  background:var(--bg);padding:40px 20px;
+}
+.setup-wrap{max-width:780px;margin:0 auto;}
+.setup-header{text-align:center;margin-bottom:36px;}
+.setup-title{font-size:28px;font-weight:900;margin-bottom:8px;}
+.setup-sub{font-size:14px;color:var(--muted);font-weight:600;}
+.step-card{background:var(--white);border-radius:var(--radius);padding:24px;margin-bottom:16px;box-shadow:var(--shadow);border-left:5px solid var(--green);}
+.step-card:nth-child(2n){border-left-color:var(--blue);}
+.step-card:nth-child(3n){border-left-color:var(--purple);}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--teal));color:white;font-size:13px;font-weight:800;margin-bottom:10px;}
+.step-title{font-size:16px;font-weight:800;margin-bottom:8px;}
+.step-sub{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:14px;line-height:1.6;}
+.code-block{background:#1e293b;color:#7dd3fc;border-radius:12px;padding:16px;font-family:monospace;font-size:12px;line-height:1.7;overflow-x:auto;position:relative;}
+.code-block .cm{color:#94a3b8;}.code-block .ck{color:#f472b6;}.code-block .cv{color:#86efac;}.code-block .cs{color:#fbbf24;}
+.copy-btn{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.1);border:none;border-radius:8px;padding:5px 10px;color:white;font-size:11px;cursor:pointer;font-family:var(--font);font-weight:700;}
+.copy-btn:hover{background:rgba(255,255,255,.2);}
+.inp-group{display:flex;flex-direction:column;gap:6px;margin-top:14px;}
+.inp-group label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);}
+.inp-group input{padding:11px 14px;border:2px solid var(--border);border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;background:var(--white);transition:border-color .2s;}
+.inp-group input:focus{outline:none;border-color:var(--green);}
+.connect-btn{margin-top:20px;padding:13px 28px;background:linear-gradient(135deg,var(--green),var(--teal));border:none;border-radius:50px;color:white;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(6,214,160,.4);transition:all .2s;}
+.connect-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(6,214,160,.5);}
+
+/* ===== MAIN APP ===== */
+#app{display:none;}
+.shell{display:flex;min-height:100vh;position:relative;z-index:1;}
+.sidebar{width:240px;flex-shrink:0;background:var(--white);border-right:1.5px solid var(--border);display:flex;flex-direction:column;padding:28px 16px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.s-logo{display:flex;align-items:center;gap:10px;padding:0 8px;margin-bottom:32px;}
+.s-bubble{width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,var(--green),var(--teal));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 14px rgba(6,214,160,.35);}
+.s-name{font-size:17px;font-weight:900;letter-spacing:-.3px;}
+.s-sub{font-size:11px;color:var(--muted);font-weight:600;}
+.s-section{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:0 10px;margin:20px 0 6px;}
+.s-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);transition:all .2s;margin-bottom:2px;}
+.s-item:hover{background:#f0faf8;color:var(--text);}
+.s-item.on{background:linear-gradient(135deg,rgba(6,214,160,.15),rgba(12,180,197,.12));color:var(--green);box-shadow:inset 2px 0 0 var(--green);}
+.s-item .ico{font-size:16px;width:20px;text-align:center;}
+.s-user{margin-top:auto;padding:14px;background:linear-gradient(135deg,#f0faf8,#e8f8ff);border-radius:14px;border:1.5px solid var(--border);}
+.s-avatar-img{width:36px;height:36px;border-radius:50%;object-fit:cover;}
+.s-avatar-ph{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--orange));display:flex;align-items:center;justify-content:center;font-size:16px;}
+.s-uname{font-size:13px;font-weight:800;margin-top:6px;}
+.s-uemail{font-size:11px;color:var(--muted);font-weight:600;}
+.s-signout{margin-top:8px;background:none;border:none;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);padding:0;}
+.s-signout:hover{color:var(--red);}
+
+.main{flex:1;padding:32px;overflow-x:hidden;}
+.page-title{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:4px;}
+.page-sub{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:28px;}
+.view{display:none;animation:fadeUp .3s ease;}
+.view.on{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+@media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+.kpi{background:var(--white);border-radius:18px;padding:18px;box-shadow:var(--shadow);border-top:4px solid transparent;position:relative;overflow:hidden;}
+.kpi::after{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:36px;opacity:.08;}
+.kpi.c1{border-color:var(--blue)}.kpi.c1::after{content:'🩸'}
+.kpi.c2{border-color:var(--orange)}.kpi.c2::after{content:'🍔'}
+.kpi.c3{border-color:var(--purple)}.kpi.c3::after{content:'💊'}
+.kpi.c4{border-color:var(--green)}.kpi.c4::after{content:'❤️'}
+.kpi-val{font-size:26px;font-weight:900;}
+.kpi-unit{font-size:13px;color:var(--muted);font-weight:600;}
+.kpi-lbl{font-size:12px;color:var(--muted);font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:.4px;}
+.kpi-trend{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:50px;font-size:11px;font-weight:700;margin-top:6px;}
+.trend-up{background:#fff0f3;color:var(--red);}
+.trend-dn{background:#e8fdf6;color:#059669;}
+.trend-eq{background:#f3f4f6;color:var(--muted);}
+
+/* Cards */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
+@media(max-width:700px){.dash-grid{grid-template-columns:1fr;}}
+.dcard{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.dcard-head{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--border);}
+.dcard-title{font-size:14px;font-weight:800;}
+.dcard-meta{font-size:11px;color:var(--muted);font-weight:600;}
+.dcard-body{padding:18px;}
+.chart-wrap{position:relative;height:180px;}
+
+/* Timeline */
+.tl-item{display:flex;gap:14px;padding:14px 0;border-bottom:1.5px solid var(--border);}
+.tl-item:last-child{border:none;}
+.tl-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.tl-dot.g{background:rgba(6,214,160,.15)}.tl-dot.r{background:rgba(255,77,109,.12)}
+.tl-date{font-size:11px;color:var(--muted);font-weight:700;}
+.tl-title{font-size:13px;font-weight:800;margin-top:2px;}
+.tl-chips{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;}
+.chip{padding:2px 8px;border-radius:50px;font-size:11px;font-weight:700;}
+.chip-ok{background:#e8fdf6;color:#059669;}.chip-ab{background:#fff0f3;color:var(--red);}
+
+/* Goal progress */
+.goal-prog{display:flex;flex-direction:column;gap:12px;}
+.gp-item{display:flex;flex-direction:column;gap:6px;}
+.gp-top{display:flex;justify-content:space-between;}
+.gp-label{font-size:13px;font-weight:700;}
+.gp-val{font-size:12px;color:var(--muted);font-weight:700;}
+.gp-bar{height:8px;background:#f0e8e0;border-radius:4px;overflow:hidden;}
+.gp-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+
+/* Forms */
+.card-section{background:var(--white);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:20px;}
+.sec-title{font-size:15px;font-weight:800;color:var(--teal);margin-bottom:16px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);}
+.field input,.field select,.field textarea{padding:11px 14px;border:2px solid var(--border);border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text);background:var(--white);transition:border-color .2s;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--green);}
+.primary-btn{padding:13px 28px;background:linear-gradient(135deg,var(--green),var(--teal));border:none;border-radius:50px;color:white;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(6,214,160,.4);transition:all .2s;display:inline-flex;align-items:center;gap:8px;}
+.primary-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(6,214,160,.5);}
+.primary-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.ghost-btn{padding:11px 20px;border-radius:50px;border:2px solid var(--border);background:var(--white);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;color:var(--text);transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.ghost-btn:hover{border-color:var(--muted);}
+.danger-btn{padding:9px 18px;border-radius:50px;border:none;background:#fff0f3;color:var(--red);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.danger-btn:hover{background:#ffe0e6;}
+
+/* Import zone */
+.import-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;transition:border-color .2s;}
+.import-zone.has{border-color:var(--green);border-style:solid;}
+.paste-area{width:100%;min-height:100px;padding:14px;border:2px solid var(--border);border-radius:12px;font-family:monospace;font-size:12px;resize:vertical;background:#f8fffe;color:var(--text);}
+.paste-area:focus{outline:none;border-color:var(--green);}
+.or-div{display:flex;align-items:center;gap:12px;margin:14px 0;color:var(--muted);font-size:12px;font-weight:700;}
+.or-div::before,.or-div::after{content:'';flex:1;height:1.5px;background:var(--border);}
+.btns-row{display:flex;gap:10px;flex-wrap:wrap;}
+.action-btn{padding:10px 20px;border-radius:50px;border:none;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+.ab-orange{background:#fff8e8;color:var(--orange)}.ab-orange:hover{background:#fff0d0;}
+.ab-red{background:#fff0f3;color:var(--red)}.ab-red:hover{background:#ffe0e6;}
+
+/* Preview table */
+.table-wrap{background:#f8fffe;border-radius:12px;overflow:hidden;border:1.5px solid var(--border);margin-bottom:16px;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;padding:9px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:#f0faf8;border-bottom:1.5px solid var(--border);}
+td{padding:10px 14px;font-size:13px;border-bottom:1px solid #f0faf8;vertical-align:middle;}
+tr:last-child td{border:none;}
+tr:hover td{background:#f0fff8;}
+.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:50px;font-size:11px;font-weight:700;}
+.tok{background:#e8fdf6;color:#059669;}.thi{background:#fff0f3;color:#e11d48;}.tlo{background:#fff8e1;color:#d97706;}.tuk{background:#f3f4f6;color:#6b7280;}
+@keyframes rowIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+tbody tr{animation:rowIn .3s ease both;}
+
+/* Records table */
+.records-wrap{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.rec-head{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--border);flex-wrap:wrap;gap:10px;}
+.search-inp{padding:8px 14px;border:2px solid var(--border);border-radius:50px;font-family:var(--font);font-size:13px;background:var(--bg);width:200px;outline:none;transition:border-color .2s;}
+.search-inp:focus{border-color:var(--teal);}
+.rec-del{background:none;border:none;cursor:pointer;font-size:16px;padding:4px 8px;border-radius:8px;transition:background .2s;}
+.rec-del:hover{background:#fff0f3;}
+
+/* Goals */
+.goal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+@media(max-width:600px){.goal-grid{grid-template-columns:1fr 1fr;}}
+.goal-card{background:var(--white);border-radius:16px;padding:14px;border:2px solid var(--border);cursor:pointer;transition:all .2s;}
+.goal-card.picked{border-color:var(--green);background:linear-gradient(135deg,rgba(6,214,160,.08),rgba(12,180,197,.05));}
+.goal-card:hover{border-color:var(--teal);}
+.ge{font-size:24px;margin-bottom:6px;}
+.gt{font-size:13px;font-weight:700;}
+.gs{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px;}
+
+/* Meds */
+.med-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f8fffe;border-radius:12px;border:1.5px solid var(--border);margin-bottom:10px;}
+.med-name{font-size:13px;font-weight:700;}
+.med-dose{font-size:11px;color:var(--muted);font-weight:600;margin-top:2px;}
+
+/* Status bar */
+.status-bar{padding:8px 14px;border-radius:10px;font-size:12px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.sb-live{background:#e8fdf6;color:#059669;border:1.5px solid rgba(6,214,160,.3);}
+.sb-demo{background:#fff8e8;color:#d97706;border:1.5px solid rgba(245,158,11,.3);}
+.sb-err{background:#fff0f3;color:var(--red);border:1.5px solid rgba(255,77,109,.3);}
+
+/* Loading spinner */
+.spin{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:sp .7s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Profile hero */
+.profile-hero{background:linear-gradient(135deg,var(--green),var(--teal));border-radius:var(--radius);padding:28px;color:white;position:relative;overflow:hidden;margin-bottom:20px;}
+.profile-hero::after{content:'🫀';position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:72px;opacity:.15;}
+.ph-name{font-size:22px;font-weight:900;}
+.ph-meta{font-size:13px;opacity:.85;font-weight:600;margin-top:4px;}
+.ph-chips{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.ph-chip{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:50px;padding:4px 12px;font-size:12px;font-weight:700;}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--white);border-radius:50px;padding:12px 22px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;box-shadow:0 8px 32px rgba(0,0,0,.12);opacity:0;transition:all .3s;z-index:9999;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
+/* Mobile */
+.mob-btn{display:none;position:fixed;top:16px;left:16px;z-index:200;background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:8px 12px;font-size:18px;cursor:pointer;box-shadow:var(--shadow);}
+@media(max-width:768px){
+  .mob-btn{display:block;}
+  .sidebar{position:fixed;left:-260px;z-index:100;transition:left .3s;box-shadow:4px 0 20px rgba(0,0,0,.1);}
+  .sidebar.open{left:0;}
+  .main{padding:20px;padding-top:64px;}
+  .kpi-row{grid-template-columns:1fr 1fr;}
+}
+
+/* Loading overlay */
+.loader{position:fixed;inset:0;z-index:998;background:rgba(240,250,248,.85);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.loader-inner{text-align:center;}
+.loader-spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 12px;}
+.loader-txt{font-size:13px;font-weight:700;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-bubble">🌿</div>
+    <div class="login-title"><span>SUPK</span> Health</div>
+    <div class="login-sub">บันทึกและติดตามผลตรวจสุขภาพของคุณ<br>ด้วย AI ที่ฉลาดและเป็นมิตร ✨</div>
+    <button class="google-btn" onclick="signInWithGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      เข้าสู่ระบบด้วย Google
+    </button>
+    <button class="demo-btn" onclick="enterDemo()">🎨 ทดลองใช้งาน (Demo Mode)</button>
+    <div class="login-features">
+      <div class="lf"><div class="lf-ico">🔒</div>ข้อมูลเป็นส่วนตัว<br>100%</div>
+      <div class="lf"><div class="lf-ico">☁️</div>บันทึกใน<br>Supabase Cloud</div>
+      <div class="lf"><div class="lf-ico">📱</div>ใช้ได้ทุก<br>อุปกรณ์</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETUP GUIDE ===== -->
+<div id="setup-screen">
+  <div class="setup-wrap">
+    <div class="setup-header">
+      <div class="setup-title">🗄 ตั้งค่า Supabase</div>
+      <div class="setup-sub">ทำตาม 4 ขั้นตอน แล้วระบบจะพร้อมใช้งานจริง</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-title">สร้าง Supabase Project</div>
+      <div class="step-sub">ไปที่ <a href="https://supabase.com" target="_blank" style="color:var(--teal)">supabase.com</a> → New Project → จดไว้: <strong>Project URL</strong> และ <strong>anon key</strong></div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-title">สร้าง Database Schema</div>
+      <div class="step-sub">ไปที่ SQL Editor ใน Supabase → วาง SQL นี้แล้วกด Run:</div>
+      <div class="code-block" style="position:relative">
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cm">-- 1. ข้อมูลโปรไฟล์ผู้ใช้</span>
+<span class="ck">create table</span> <span class="cv">profiles</span> (
+  id          uuid <span class="ck">references</span> auth.users <span class="ck">primary key</span>,
+  name        text,
+  age         int,
+  sex         text,
+  weight      numeric,
+  height      numeric,
+  blood_type  text,
+  disease     text,
+  allergy     text,
+  doctor      text,
+  hospital    text,
+  created_at  timestamptz <span class="ck">default</span> now(),
+  updated_at  timestamptz <span class="ck">default</span> now()
+);
+
+<span class="cm">-- 2. ผลตรวจสุขภาพแต่ละครั้ง</span>
+<span class="ck">create table</span> <span class="cv">health_records</span> (
+  id              uuid <span class="ck">default</span> gen_random_uuid() <span class="ck">primary key</span>,
+  user_id         uuid <span class="ck">references</span> auth.users <span class="ck">not null</span>,
+  record_date     date <span class="ck">not null</span>,
+  hospital        text,
+  note            text,
+  item_count      int,
+  abnormal_count  int,
+  confidence      numeric,
+  raw_data        jsonb,
+  created_at      timestamptz <span class="ck">default</span> now()
+);
+
+<span class="cm">-- 3. รายการผลตรวจแต่ละค่า</span>
+<span class="ck">create table</span> <span class="cv">health_items</span> (
+  id               uuid <span class="ck">default</span> gen_random_uuid() <span class="ck">primary key</span>,
+  record_id        uuid <span class="ck">references</span> health_records <span class="ck">on delete cascade</span>,
+  user_id          uuid <span class="ck">references</span> auth.users,
+  name_th          text,
+  name_en          text,
+  value            text,
+  unit             text,
+  reference_range  text,
+  status           text,
+  confidence       numeric,
+  recorded_at      date
+);
+
+<span class="cm">-- 4. เป้าหมายสุขภาพ</span>
+<span class="ck">create table</span> <span class="cv">health_goals</span> (
+  id       uuid <span class="ck">default</span> gen_random_uuid() <span class="ck">primary key</span>,
+  user_id  uuid <span class="ck">references</span> auth.users <span class="ck">not null</span>,
+  goals    text[],
+  updated_at timestamptz <span class="ck">default</span> now()
+);
+
+<span class="cm">-- 5. ยาและอาหารเสริม</span>
+<span class="ck">create table</span> <span class="cv">medications</span> (
+  id        uuid <span class="ck">default</span> gen_random_uuid() <span class="ck">primary key</span>,
+  user_id   uuid <span class="ck">references</span> auth.users <span class="ck">not null</span>,
+  name      text,
+  dose      text,
+  med_type  text,
+  active    boolean <span class="ck">default</span> true,
+  created_at timestamptz <span class="ck">default</span> now()
+);
+
+<span class="cm">-- Row Level Security (ผู้ใช้เห็นเฉพาะข้อมูลตัวเอง)</span>
+<span class="ck">alter table</span> profiles        <span class="ck">enable row level security</span>;
+<span class="ck">alter table</span> health_records   <span class="ck">enable row level security</span>;
+<span class="ck">alter table</span> health_items     <span class="ck">enable row level security</span>;
+<span class="ck">alter table</span> health_goals     <span class="ck">enable row level security</span>;
+<span class="ck">alter table</span> medications      <span class="ck">enable row level security</span>;
+
+<span class="cm">-- Policies</span>
+<span class="ck">create policy</span> <span class="cs">"own data only"</span> <span class="ck">on</span> profiles        <span class="ck">for all using</span> (auth.uid() = id);
+<span class="ck">create policy</span> <span class="cs">"own data only"</span> <span class="ck">on</span> health_records   <span class="ck">for all using</span> (auth.uid() = user_id);
+<span class="ck">create policy</span> <span class="cs">"own data only"</span> <span class="ck">on</span> health_items     <span class="ck">for all using</span> (auth.uid() = user_id);
+<span class="ck">create policy</span> <span class="cs">"own data only"</span> <span class="ck">on</span> health_goals     <span class="ck">for all using</span> (auth.uid() = user_id);
+<span class="ck">create policy</span> <span class="cs">"own data only"</span> <span class="ck">on</span> medications      <span class="ck">for all using</span> (auth.uid() = user_id);</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div class="step-title">เปิด Google Auth</div>
+      <div class="step-sub">
+        ไปที่ <strong>Authentication → Providers → Google</strong> → เปิด Enable<br>
+        จากนั้นไปที่ <a href="https://console.cloud.google.com" target="_blank" style="color:var(--teal)">Google Cloud Console</a> → สร้าง OAuth 2.0 Client ID → นำ Client ID & Secret มาใส่ใน Supabase<br><br>
+        เพิ่ม Redirect URL ใน Google Console:<br>
+        <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;font-size:12px">https://[your-project].supabase.co/auth/v1/callback</code>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <div class="step-title">ใส่ Supabase Credentials ด้านล่าง</div>
+      <div class="step-sub">คัดลอกจาก Settings → API ใน Supabase Dashboard</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="inp-group">
+          <label>Supabase Project URL</label>
+          <input type="text" id="setup-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
+        </div>
+        <div class="inp-group">
+          <label>Supabase Anon Key</label>
+          <input type="text" id="setup-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        </div>
+      </div>
+      <button class="connect-btn" onclick="saveSetup()">🚀 เชื่อมต่อและเริ่มใช้งาน</button>
+      <button style="margin-left:12px;background:none;border:none;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);" onclick="enterDemo()">ข้ามไป Demo Mode</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LOADING ===== -->
+<div class="loader" id="loader" style="display:none">
+  <div class="loader-inner">
+    <div class="loader-spin"></div>
+    <div class="loader-txt" id="loader-txt">กำลังโหลด...</div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app">
+  <button class="mob-btn" onclick="toggleSidebar()">☰</button>
+  <div class="shell">
+    <nav class="sidebar" id="sidebar">
+      <div class="s-logo">
+        <div class="s-bubble">🌿</div>
+        <div>
+          <div class="s-name">SUPK</div>
+          <div class="s-sub">Health · Module #2</div>
+        </div>
+      </div>
+      <div class="s-section">หน้าหลัก</div>
+      <div class="s-item on" onclick="goView('dashboard',this)"><span class="ico">📊</span>Dashboard</div>
+      <div class="s-item" onclick="goView('save',this)"><span class="ico">➕</span>บันทึกผลตรวจ</div>
+      <div class="s-item" onclick="goView('records',this)"><span class="ico">📋</span>ประวัติทั้งหมด</div>
+      <div class="s-section">ข้อมูลส่วนตัว</div>
+      <div class="s-item" onclick="goView('profile',this)"><span class="ico">👤</span>โปรไฟล์สุขภาพ</div>
+      <div class="s-item" onclick="goView('goals',this)"><span class="ico">🎯</span>เป้าหมายสุขภาพ</div>
+      <div class="s-item" onclick="goView('meds',this)"><span class="ico">💊</span>ยา / อาหารเสริม</div>
+      <div class="s-section">ระบบ</div>
+      <div class="s-item" onclick="showSetup()"><span class="ico">⚙️</span>ตั้งค่า Supabase</div>
+      <div class="s-item" onclick="doExportAll()"><span class="ico">⬇️</span>Export ข้อมูลทั้งหมด</div>
+      <div class="s-user">
+        <div id="s-avatar-wrap"><div class="s-avatar-ph">😊</div></div>
+        <div class="s-uname" id="s-uname">ผู้ใช้งาน</div>
+        <div class="s-uemail" id="s-uemail">Demo Mode</div>
+        <button class="s-signout" onclick="signOut()">ออกจากระบบ →</button>
+      </div>
+    </nav>
+
+    <main class="main">
+      <div class="status-bar sb-demo" id="status-bar">
+        <span>🟡</span><span id="status-txt">Demo Mode — ข้อมูลบันทึกใน localStorage</span>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div class="view on" id="view-dashboard">
+        <div class="page-title">สวัสดี <span id="greet-name">คุณ! 👋</span></div>
+        <div class="page-sub">ภาพรวมสุขภาพ · อัปเดตล่าสุด <span id="last-update">—</span></div>
+        <div class="kpi-row">
+          <div class="kpi c1"><div class="kpi-val" id="kpi-sugar">—</div><div class="kpi-unit">mg/dL</div><div class="kpi-lbl">น้ำตาลในเลือด</div><div class="kpi-trend trend-eq" id="kpi-sugar-t">— ไม่มีข้อมูล</div></div>
+          <div class="kpi c2"><div class="kpi-val" id="kpi-chol">—</div><div class="kpi-unit">mg/dL</div><div class="kpi-lbl">คอเลสเตอรอล</div><div class="kpi-trend trend-eq" id="kpi-chol-t">— ไม่มีข้อมูล</div></div>
+          <div class="kpi c3"><div class="kpi-val" id="kpi-uric">—</div><div class="kpi-unit">mg/dL</div><div class="kpi-lbl">ยูริกแอซิด</div><div class="kpi-trend trend-eq" id="kpi-uric-t">— ไม่มีข้อมูล</div></div>
+          <div class="kpi c4"><div class="kpi-val" id="kpi-hb">—</div><div class="kpi-unit">g/dL</div><div class="kpi-lbl">ฮีโมโกลบิน</div><div class="kpi-trend trend-eq" id="kpi-hb-t">— ไม่มีข้อมูล</div></div>
+        </div>
+        <div class="dash-grid">
+          <div class="dcard"><div class="dcard-head"><div class="dcard-title">📈 แนวโน้มน้ำตาล</div><div class="dcard-meta">6 ครั้งล่าสุด</div></div><div class="dcard-body"><div class="chart-wrap"><canvas id="chart-sugar"></canvas></div></div></div>
+          <div class="dcard"><div class="dcard-head"><div class="dcard-title">📉 แนวโน้มคอเลสเตอรอล</div><div class="dcard-meta">6 ครั้งล่าสุด</div></div><div class="dcard-body"><div class="chart-wrap"><canvas id="chart-chol"></canvas></div></div></div>
+        </div>
+        <div class="dash-grid">
+          <div class="dcard"><div class="dcard-head"><div class="dcard-title">🗓 ประวัติล่าสุด</div><div class="dcard-meta" id="rec-count-lbl">0 ครั้ง</div></div><div class="dcard-body"><div id="timeline-list"><div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;font-weight:600">ยังไม่มีประวัติ — กด "บันทึกผลตรวจ" เพื่อเริ่ม 😊</div></div></div></div>
+          <div class="dcard"><div class="dcard-head"><div class="dcard-title">🎯 เป้าหมายสุขภาพ</div><div class="dcard-meta" id="goal-prog-lbl">—</div></div><div class="dcard-body"><div class="goal-prog" id="goal-prog-list"><div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;font-weight:600">ตั้งค่าเป้าหมายได้ที่เมนูด้านซ้าย</div></div></div></div>
+        </div>
+      </div>
+
+      <!-- SAVE -->
+      <div class="view" id="view-save">
+        <div class="page-title">➕ บันทึกผลตรวจ</div>
+        <div class="page-sub">วางข้อมูลจาก Module #1 หรือกรอกเองได้เลย</div>
+        <div class="import-zone" id="import-zone">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-size:15px;font-weight:800">📋 วาง JSON จาก Module #1</div>
+            <div style="background:linear-gradient(135deg,var(--green),var(--teal));color:white;padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;">Auto-parse</div>
+          </div>
+          <textarea class="paste-area" id="paste-area" placeholder='วาง JSON ที่ Export จาก Module #1 ตรงนี้...' oninput="parseImport(this.value)"></textarea>
+          <div class="or-div">หรือ</div>
+          <div class="btns-row">
+            <button class="action-btn ab-orange" onclick="loadLastOCR()">📥 โหลดผลสแกนล่าสุด</button>
+            <button class="action-btn ab-orange" onclick="loadDemo()">🎨 ข้อมูลตัวอย่าง</button>
+          </div>
+        </div>
+        <div id="preview-section" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:15px;font-weight:800">📊 ข้อมูลที่จะบันทึก</div>
+            <div style="font-size:13px;color:var(--green);font-weight:700" id="preview-count">0 รายการ</div>
+          </div>
+          <div class="card-section">
+            <div class="form-grid">
+              <div class="field"><label>📅 วันที่ตรวจ</label><input type="date" id="rec-date"></div>
+              <div class="field"><label>🏥 โรงพยาบาล</label><input type="text" id="rec-hospital" placeholder="เช่น รพ.กรุงเทพ"></div>
+              <div class="field" style="grid-column:1/-1"><label>📝 บันทึกเพิ่มเติม</label><input type="text" id="rec-note" placeholder="เช่น อดอาหาร 8 ชั่วโมง"></div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>รายการ</th><th>ค่า</th><th>หน่วย</th><th>ค่าอ้างอิง</th><th>สถานะ</th></tr></thead>
+            <tbody id="preview-tbody"></tbody></table>
+          </div>
+          <div class="btns-row">
+            <button class="primary-btn" id="save-record-btn" onclick="doSaveRecord()">💾 บันทึกลงฐานข้อมูล</button>
+            <button class="action-btn ab-red" onclick="clearImport()">✕ ล้างข้อมูล</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECORDS -->
+      <div class="view" id="view-records">
+        <div class="page-title">📋 ประวัติทั้งหมด</div>
+        <div class="page-sub" id="rec-total-lbl">0 รายการ</div>
+        <div class="records-wrap">
+          <div class="rec-head">
+            <div style="font-size:15px;font-weight:800">ผลตรวจทั้งหมด</div>
+            <input class="search-inp" placeholder="🔍 ค้นหา..." oninput="filterRecords(this.value)">
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>วันที่</th><th>โรงพยาบาล</th><th>รายการ</th><th>ค่าผิดปกติ</th><th>ความแม่นยำ</th><th></th></tr></thead>
+              <tbody id="rec-tbody"></tbody>
+            </table>
+          </div>
+          <div id="rec-empty" style="text-align:center;padding:50px;color:var(--muted)">
+            <div style="font-size:40px;margin-bottom:10px">📂</div>
+            <div style="font-weight:700;font-size:14px">ยังไม่มีประวัติ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="view" id="view-profile">
+        <div class="page-title">👤 โปรไฟล์สุขภาพ</div>
+        <div class="page-sub">ข้อมูลส่วนตัว ใช้ในการวิเคราะห์ Module #3</div>
+        <div class="profile-hero">
+          <div class="ph-name" id="ph-name">ตั้งชื่อได้เลย ✏️</div>
+          <div class="ph-meta" id="ph-meta">กรุณากรอกข้อมูลด้านล่าง</div>
+          <div class="ph-chips" id="ph-chips"></div>
+        </div>
+        <div class="card-section">
+          <div class="sec-title">ข้อมูลพื้นฐาน</div>
+          <div class="form-grid">
+            <div class="field"><label>ชื่อ-นามสกุล</label><input type="text" id="p-name" placeholder="สมชาย ใจดี"></div>
+            <div class="field"><label>อายุ (ปี)</label><input type="number" id="p-age" min="1" max="120"></div>
+            <div class="field"><label>เพศ</label><select id="p-sex"><option value="">เลือก</option><option>ชาย</option><option>หญิง</option><option>ไม่ระบุ</option></select></div>
+            <div class="field"><label>น้ำหนัก (กก.)</label><input type="number" id="p-weight" step="0.1"></div>
+            <div class="field"><label>ส่วนสูง (ซม.)</label><input type="number" id="p-height"></div>
+            <div class="field"><label>กรุ๊ปเลือด</label><select id="p-blood"><option value="">เลือก</option><option>A</option><option>B</option><option>AB</option><option>O</option></select></div>
+            <div class="field"><label>โรคประจำตัว</label><input type="text" id="p-disease" placeholder="เบาหวาน, ความดัน..."></div>
+            <div class="field"><label>แพ้ยา/อาหาร</label><input type="text" id="p-allergy" placeholder="penicillin..."></div>
+            <div class="field"><label>แพทย์ประจำตัว</label><input type="text" id="p-doctor"></div>
+            <div class="field"><label>โรงพยาบาลประจำ</label><input type="text" id="p-hospital"></div>
+          </div>
+          <div style="margin-top:16px"><button class="primary-btn" onclick="saveProfile()">💾 บันทึกโปรไฟล์</button></div>
+        </div>
+      </div>
+
+      <!-- GOALS -->
+      <div class="view" id="view-goals">
+        <div class="page-title">🎯 เป้าหมายสุขภาพ</div>
+        <div class="page-sub">เลือกเป้าหมายที่จะติดตามใน Dashboard</div>
+        <div class="card-section">
+          <div class="goal-grid" id="goal-grid">
+            <div class="goal-card picked" data-goal="sugar" onclick="toggleGoal(this)"><div class="ge">🩸</div><div class="gt">ควบคุมน้ำตาล</div><div class="gs">เป้า &lt; 100 mg/dL</div></div>
+            <div class="goal-card" data-goal="chol" onclick="toggleGoal(this)"><div class="ge">🍔</div><div class="gt">ลดคอเลสเตอรอล</div><div class="gs">เป้า &lt; 200 mg/dL</div></div>
+            <div class="goal-card" data-goal="uric" onclick="toggleGoal(this)"><div class="ge">🦵</div><div class="gt">ลดยูริกแอซิด</div><div class="gs">เป้า &lt; 7.0 mg/dL</div></div>
+            <div class="goal-card" data-goal="bp" onclick="toggleGoal(this)"><div class="ge">❤️</div><div class="gt">ควบคุมความดัน</div><div class="gs">เป้า &lt; 120/80</div></div>
+            <div class="goal-card" data-goal="trig" onclick="toggleGoal(this)"><div class="ge">🫀</div><div class="gt">ลดไตรกลีเซอไรด์</div><div class="gs">เป้า &lt; 150 mg/dL</div></div>
+            <div class="goal-card" data-goal="weight" onclick="toggleGoal(this)"><div class="ge">⚖️</div><div class="gt">ลดน้ำหนัก</div><div class="gs">ตาม BMI ปกติ</div></div>
+          </div>
+          <div style="margin-top:20px"><button class="primary-btn" onclick="saveGoals()">💾 บันทึกเป้าหมาย</button></div>
+        </div>
+      </div>
+
+      <!-- MEDS -->
+      <div class="view" id="view-meds">
+        <div class="page-title">💊 ยา / อาหารเสริม</div>
+        <div class="page-sub">รายการยาและอาหารเสริมที่รับประทาน</div>
+        <div class="card-section">
+          <div class="sec-title">➕ เพิ่มรายการ</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div class="field"><label>ชื่อยา</label><input type="text" id="med-name" placeholder="Metformin"></div>
+            <div class="field"><label>ขนาด</label><input type="text" id="med-dose" placeholder="500mg 1x/วัน"></div>
+            <div class="field"><label>ประเภท</label><select id="med-type"><option>ยารักษาโรค</option><option>วิตามิน</option><option>อาหารเสริม</option><option>ยาสมุนไพร</option></select></div>
+            <button class="primary-btn" onclick="addMed()" style="padding:11px 18px">➕ เพิ่ม</button>
+          </div>
+        </div>
+        <div class="card-section">
+          <div class="sec-title">รายการปัจจุบัน</div>
+          <div id="med-list"><div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;font-weight:600">ยังไม่มีรายการ</div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="tico"></span> <span id="tmsg"></span></div>
+
+<script>
+// ===== CONFIG =====
+const SUPABASE_URL = 'https://shsfdnjumhotlnnavxmf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_REDlinzGZT8o_90a73yUOA_5FJGXPYh';
+
+let sbClient = null;
+let currentUser = null;
+let isDemoMode = true;
+let allRecords = [];
+let charts = {};
+
+// ===== INIT SUPABASE =====
+function initSupabase(url, key) {
+  try {
+    sbClient = window.supabase.createClient(url, key);
+    return true;
+  } catch(e) { return false; }
+}
+
+// ===== STARTUP ===== 
+(async function startup() {
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    const ok = initSupabase(SUPABASE_URL, SUPABASE_KEY);
+    if (ok) {
+      showLoader('กำลังตรวจสอบ session...');
+      const { data: { session } } = await sbClient.auth.getSession();
+      hideLoader();
+      if (session) {
+        currentUser = session.user;
+        isDemoMode = false;
+        enterApp();
+        return;
+      }
+      // has config but not logged in — show login
+      document.getElementById('login-screen').style.display = 'flex';
+      return;
+    }
+  }
+  // no config — show login (demo option available)
+  document.getElementById('login-screen').style.display = 'flex';
+})();
+
+// ===== AUTH =====
+async function signInWithGoogle() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    showSetup(); return;
+  }
+  showLoader('กำลังเปิด Google Login...');
+  const { error } = await sbClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.href }
+  });
+  hideLoader();
+  if (error) toast('เกิดข้อผิดพลาด: ' + error.message, '❌');
+}
+
+async function signOut() {
+  if (sbClient && !isDemoMode) await sbClient.auth.signOut();
+  currentUser = null; isDemoMode = true;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function enterDemo() {
+  isDemoMode = true; currentUser = null;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'none';
+  enterApp();
+}
+
+function showSetup() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'block';
+  if (SUPABASE_URL) document.getElementById('setup-url').value = SUPABASE_URL;
+  if (SUPABASE_KEY) document.getElementById('setup-key').value = SUPABASE_KEY;
+}
+
+function saveSetup() {
+  const url = document.getElementById('setup-url').value.trim();
+  const key = document.getElementById('setup-key').value.trim();
+  if (!url || !key) return toast('กรุณากรอก URL และ Key ให้ครบ', '⚠️');
+  localStorage.setItem('supk-sb-url', url);
+  localStorage.setItem('supk-sb-key', key);
+  const ok = initSupabase(url, key);
+  if (!ok) return toast('URL หรือ Key ไม่ถูกต้อง', '❌');
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  toast('บันทึก config แล้ว! กด Login ได้เลย 🎉', '✅');
+}
+
+function enterApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  updateStatusBar();
+  updateSidebarUser();
+  loadAll();
+}
+
+function updateStatusBar() {
+  const bar = document.getElementById('status-bar');
+  const txt = document.getElementById('status-txt');
+  if (isDemoMode) {
+    bar.className = 'status-bar sb-demo';
+    txt.textContent = '🟡 Demo Mode — ข้อมูลบันทึกใน localStorage (ไม่ sync cloud)';
+  } else {
+    bar.className = 'status-bar sb-live';
+    txt.textContent = '🟢 เชื่อมต่อ Supabase แล้ว — ข้อมูล sync cloud อัตโนมัติ';
+  }
+}
+
+function updateSidebarUser() {
+  const u = currentUser;
+  document.getElementById('s-uname').textContent = u?.user_metadata?.full_name || u?.email || 'Demo User';
+  document.getElementById('s-uemail').textContent = u?.email || 'localStorage mode';
+  const wrap = document.getElementById('s-avatar-wrap');
+  const pic = u?.user_metadata?.avatar_url;
+  wrap.innerHTML = pic
+    ? `<img class="s-avatar-img" src="${pic}" alt="avatar">`
+    : `<div class="s-avatar-ph">😊</div>`;
+  const gname = u?.user_metadata?.full_name?.split(' ')[0] || 'คุณ';
+  document.getElementById('greet-name').textContent = gname + '! 👋';
+}
+
+// ===== DB LAYER — auto switches between Supabase & localStorage =====
+const DB = {
+  async getRecords() {
+    if (!isDemoMode && sbClient) {
+      const { data } = await sbClient.from('health_records')
+        .select('*, health_items(*)')
+        .eq('user_id', currentUser.id)
+        .order('record_date', { ascending: false });
+      return (data || []).map(r => ({
+        ...r, date: r.record_date,
+        count: r.item_count, abnormal: r.abnormal_count,
+        items: r.health_items || []
+      }));
+    }
+    return JSON.parse(localStorage.getItem('supk2-records') || '[]');
+  },
+  async saveRecord(record) {
+    if (!isDemoMode && sbClient) {
+      const uid = currentUser.id;
+      const { data: rec, error } = await sbClient.from('health_records').insert({
+        user_id: uid, record_date: record.date, hospital: record.hospital,
+        note: record.note, item_count: record.count,
+        abnormal_count: record.abnormal, confidence: record.confidence,
+        raw_data: record.items
+      }).select().single();
+      if (error) throw error;
+      // insert items
+      const items = record.items.map(i => ({ ...i, record_id: rec.id, user_id: uid, recorded_at: record.date }));
+      await sbClient.from('health_items').insert(items);
+      return rec;
+    }
+    const records = JSON.parse(localStorage.getItem('supk2-records') || '[]');
+    records.unshift({ ...record, id: Date.now() });
+    localStorage.setItem('supk2-records', JSON.stringify(records));
+  },
+  async deleteRecord(id) {
+    if (!isDemoMode && sbClient) {
+      await sbClient.from('health_records').delete().eq('id', id).eq('user_id', currentUser.id);
+      return;
+    }
+    const records = JSON.parse(localStorage.getItem('supk2-records') || '[]').filter(r => r.id != id);
+    localStorage.setItem('supk2-records', JSON.stringify(records));
+  },
+  async getProfile() {
+    if (!isDemoMode && sbClient) {
+      const { data } = await sbClient.from('profiles').select('*').eq('id', currentUser.id).single();
+      return data || {};
+    }
+    return JSON.parse(localStorage.getItem('supk2-profile') || '{}');
+  },
+  async saveProfile(p) {
+    if (!isDemoMode && sbClient) {
+      await sbClient.from('profiles').upsert({ id: currentUser.id, ...p, updated_at: new Date().toISOString() });
+      return;
+    }
+    localStorage.setItem('supk2-profile', JSON.stringify(p));
+  },
+  async getGoals() {
+    if (!isDemoMode && sbClient) {
+      const { data } = await sbClient.from('health_goals').select('goals').eq('user_id', currentUser.id).single();
+      return data?.goals || ['sugar'];
+    }
+    return JSON.parse(localStorage.getItem('supk2-goals') || '["sugar"]');
+  },
+  async saveGoals(goals) {
+    if (!isDemoMode && sbClient) {
+      await sbClient.from('health_goals').upsert({ user_id: currentUser.id, goals, updated_at: new Date().toISOString() });
+      return;
+    }
+    localStorage.setItem('supk2-goals', JSON.stringify(goals));
+  },
+  async getMeds() {
+    if (!isDemoMode && sbClient) {
+      const { data } = await sbClient.from('medications').select('*').eq('user_id', currentUser.id).eq('active', true);
+      return data || [];
+    }
+    return JSON.parse(localStorage.getItem('supk2-meds') || '[]');
+  },
+  async saveMed(med) {
+    if (!isDemoMode && sbClient) {
+      await sbClient.from('medications').insert({ user_id: currentUser.id, ...med });
+      return;
+    }
+    const meds = JSON.parse(localStorage.getItem('supk2-meds') || '[]');
+    meds.push({ ...med, id: Date.now() });
+    localStorage.setItem('supk2-meds', JSON.stringify(meds));
+  },
+  async deleteMed(id) {
+    if (!isDemoMode && sbClient) {
+      await sbClient.from('medications').update({ active: false }).eq('id', id);
+      return;
+    }
+    const meds = JSON.parse(localStorage.getItem('supk2-meds') || '[]').filter(m => m.id != id);
+    localStorage.setItem('supk2-meds', JSON.stringify(meds));
+  }
+};
+
+// ===== LOAD ALL =====
+async function loadAll() {
+  showLoader('กำลังโหลดข้อมูล...');
+  allRecords = await DB.getRecords();
+  hideLoader();
+  refreshDashboard();
+}
+
+// ===== NAV =====
+function goView(name, el) {
+  document.querySelectorAll('.s-item').forEach(i => i.classList.remove('on'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  if(el) el.classList.add('on');
+  document.getElementById('view-' + name).classList.add('on');
+  document.getElementById('sidebar').classList.remove('open');
+  if(name === 'dashboard') refreshDashboard();
+  if(name === 'records') refreshRecords();
+  if(name === 'profile') loadProfile();
+  if(name === 'goals') loadGoals();
+  if(name === 'meds') renderMeds();
+}
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+// ===== DASHBOARD =====
+async function refreshDashboard() {
+  if(!allRecords.length) allRecords = await DB.getRecords();
+  const latest = allRecords[0];
+  if(latest) {
+    const d = new Date(latest.date).toLocaleDateString('th-TH', {year:'numeric',month:'long',day:'numeric'});
+    document.getElementById('last-update').textContent = d;
+    const find = k => latest.items?.find(i => i.name_en?.toLowerCase().includes(k));
+    setKPI('sugar', find('fasting') || find('blood sugar'), allRecords, 'fasting');
+    setKPI('chol',  find('total chol'), allRecords, 'total chol');
+    setKPI('uric',  find('uric'), allRecords, 'uric');
+    setKPI('hb',    find('hemoglobin'), allRecords, 'hemoglobin');
+  }
+  document.getElementById('rec-count-lbl').textContent = allRecords.length + ' ครั้ง';
+  renderTimeline();
+  renderCharts();
+  await renderGoalProgress();
+}
+
+function setKPI(id, item, records, searchKey) {
+  const el = document.getElementById('kpi-' + id);
+  const tel = document.getElementById('kpi-' + id + '-t');
+  if(!item) { el.textContent = '—'; return; }
+  el.textContent = item.value;
+  if(records.length >= 2) {
+    const prev = records[1].items?.find(i => i.name_en?.toLowerCase().includes(searchKey));
+    if(prev) {
+      const diff = parseFloat(item.value) - parseFloat(prev.value);
+      if(Math.abs(diff) < 0.01) { tel.className = 'kpi-trend trend-eq'; tel.textContent = '— คงที่'; }
+      else if(diff > 0) { tel.className = 'kpi-trend trend-up'; tel.textContent = '↑ +' + diff.toFixed(1) + ' จากครั้งก่อน'; }
+      else { tel.className = 'kpi-trend trend-dn'; tel.textContent = '↓ ' + diff.toFixed(1) + ' จากครั้งก่อน'; }
+      return;
+    }
+  }
+  tel.className = 'kpi-trend trend-eq'; tel.textContent = '— ข้อมูลแรก';
+}
+
+function renderTimeline() {
+  const list = document.getElementById('timeline-list');
+  if(!allRecords.length) { list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;font-weight:600">ยังไม่มีประวัติ — กด "บันทึกผลตรวจ" เพื่อเริ่ม 😊</div>'; return; }
+  list.innerHTML = allRecords.slice(0,4).map(r => {
+    const d = new Date(r.date).toLocaleDateString('th-TH',{month:'short',day:'numeric',year:'numeric'});
+    const abn = r.abnormal || 0;
+    return `<div class="tl-item">
+      <div class="tl-dot ${abn > 0 ? 'r' : 'g'}">${abn > 0 ? '⚠️' : '✅'}</div>
+      <div style="flex:1">
+        <div class="tl-date">📅 ${d} · 🏥 ${r.hospital||'ไม่ระบุ'}</div>
+        <div class="tl-title">${r.count||0} รายการ</div>
+        <div class="tl-chips">
+          <span class="chip chip-ok">${(r.count||0) - abn} ปกติ</span>
+          ${abn ? `<span class="chip chip-ab">${abn} ผิดปกติ</span>` : ''}
+        </div>
+      </div></div>`;
+  }).join('');
+}
+
+function renderCharts() {
+  buildChart('chart-sugar', getChartData('fasting', 'blood sugar'), '#ff6b9d', 100);
+  buildChart('chart-chol',  getChartData('total chol', 'cholesterol'), '#4f8ef7', 200);
+}
+
+function getChartData(k1, k2) {
+  return allRecords.slice(0,6).reverse().map(r => {
+    const item = r.items?.find(i => i.name_en?.toLowerCase().includes(k1) || i.name_en?.toLowerCase().includes(k2));
+    return { label: new Date(r.date).toLocaleDateString('th-TH',{month:'short',day:'numeric'}), val: item ? parseFloat(item.value) : null };
+  }).filter(p => p.val !== null);
+}
+
+function buildChart(id, pts, color, ref) {
+  if(charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if(!ctx || !pts.length) return;
+  charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: pts.map(p => p.label),
+      datasets: [
+        { data: pts.map(p => p.val), borderColor: color, backgroundColor: color+'22', borderWidth:2.5, pointBackgroundColor: color, pointRadius:5, fill:true, tension:.4 },
+        { data: pts.map(() => ref), borderColor:'#e0e0e0', borderWidth:1.5, borderDash:[5,5], pointRadius:0, fill:false }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ grid:{display:false}, ticks:{font:{size:11,family:'Nunito'},color:'#8b8b8b'} },
+        y:{ grid:{color:'#f0e8e0'}, ticks:{font:{size:11,family:'Nunito'},color:'#8b8b8b'} }
+      }
+    }
+  });
+}
+
+async function renderGoalProgress() {
+  const goals = await DB.getGoals();
+  const latest = allRecords[0];
+  const list = document.getElementById('goal-prog-list');
+  if(!goals.length || !latest) { list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;font-weight:600">ตั้งค่าเป้าหมายได้ที่เมนูด้านซ้าย</div>'; return; }
+  const defs = {
+    sugar:{label:'🩸 น้ำตาล',key:'fasting',target:100},
+    chol:{label:'🍔 คอเลสเตอรอล',key:'total chol',target:200},
+    uric:{label:'🦵 ยูริก',key:'uric',target:7},
+    trig:{label:'🫀 ไตรกลีเซอไรด์',key:'triglyceride',target:150},
+  };
+  let met = 0, total = 0;
+  const html = goals.map(g => {
+    const def = defs[g]; if(!def) return '';
+    const item = latest.items?.find(i => i.name_en?.toLowerCase().includes(def.key));
+    if(!item) return '';
+    const val = parseFloat(item.value);
+    const pct = Math.min(100, Math.round((def.target/val)*100));
+    const color = pct>=100?'var(--green)':pct>=70?'#f59e0b':'var(--red)';
+    if(pct>=100) met++; total++;
+    return `<div class="gp-item"><div class="gp-top"><span class="gp-label">${def.label}</span><span class="gp-val">${val} / ${def.target}</span></div><div class="gp-bar"><div class="gp-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+  }).join('');
+  list.innerHTML = html || '<div style="text-align:center;color:var(--muted);font-size:13px;font-weight:600">ไม่มีข้อมูลตรงกับเป้าหมาย</div>';
+  document.getElementById('goal-prog-lbl').textContent = `บรรลุ ${met}/${total} เป้าหมาย`;
+}
+
+// ===== IMPORT / SAVE =====
+let importedData = null;
+function parseImport(txt) {
+  try {
+    const d = JSON.parse(txt.replace(/```json|```/g,'').trim());
+    if(!d.items) throw new Error();
+    importedData = d; showPreview(d);
+    document.getElementById('import-zone').classList.add('has');
+  } catch { document.getElementById('preview-section').style.display='none'; importedData=null; }
+}
+function loadLastOCR() {
+  const h = JSON.parse(localStorage.getItem('supk-hist')||'[]');
+  if(!h.length) return toast('ยังไม่มีผลสแกนใน Module #1', '⚠️');
+  importedData = h[0].data;
+  document.getElementById('paste-area').value = JSON.stringify(importedData, null, 2);
+  showPreview(importedData);
+  document.getElementById('import-zone').classList.add('has');
+  toast('โหลดผลสแกนล่าสุดแล้ว ✅','✅');
+}
+function loadDemo() {
+  importedData = demoData();
+  document.getElementById('paste-area').value = JSON.stringify(importedData, null, 2);
+  showPreview(importedData);
+  document.getElementById('import-zone').classList.add('has');
+}
+function showPreview(d) {
+  document.getElementById('preview-section').style.display = 'block';
+  document.getElementById('preview-count').textContent = d.items.length + ' รายการ';
+  document.getElementById('rec-date').value = d.report_date || new Date().toISOString().split('T')[0];
+  document.getElementById('rec-hospital').value = d.hospital || '';
+  document.getElementById('preview-tbody').innerHTML = d.items.map(i => `
+    <tr><td><div style="font-weight:700">${i.name_th}</div><div style="font-size:11px;color:var(--muted)">${i.name_en}</div></td>
+    <td style="font-weight:700">${i.value}</td><td style="font-size:12px;color:var(--muted)">${i.unit}</td>
+    <td style="font-size:12px;color:var(--muted)">${i.reference_range}</td>
+    <td>${sBadge(i.status)}</td></tr>`).join('');
+}
+function sBadge(s) {
+  const m = {normal:'<span class="tag tok">✓ ปกติ</span>',high:'<span class="tag thi">↑ สูง</span>',low:'<span class="tag tlo">↓ ต่ำ</span>'};
+  return m[s] || '<span class="tag tuk">—</span>';
+}
+function clearImport() {
+  importedData = null;
+  document.getElementById('paste-area').value = '';
+  document.getElementById('preview-section').style.display = 'none';
+  document.getElementById('import-zone').classList.remove('has');
+}
+async function doSaveRecord() {
+  if(!importedData) return toast('ยังไม่มีข้อมูล','⚠️');
+  const btn = document.getElementById('save-record-btn');
+  btn.disabled = true; btn.innerHTML = '<div class="spin"></div> กำลังบันทึก...';
+  try {
+    const record = {
+      date: document.getElementById('rec-date').value || new Date().toISOString().split('T')[0],
+      hospital: document.getElementById('rec-hospital').value,
+      note: document.getElementById('rec-note').value,
+      count: importedData.items.length,
+      abnormal: importedData.items.filter(i=>i.status!=='normal'&&i.status!=='unknown').length,
+      confidence: importedData.overall_confidence || 0.9,
+      items: importedData.items
+    };
+    await DB.saveRecord(record);
+    allRecords = await DB.getRecords();
+    clearImport();
+    toast(`บันทึกแล้ว ${record.count} รายการ 🎉`, '✅');
+    setTimeout(() => goView('dashboard', document.querySelectorAll('.s-item')[0]), 600);
+  } catch(e) {
+    toast('เกิดข้อผิดพลาด: ' + e.message, '❌');
+  }
+  btn.disabled = false; btn.innerHTML = '💾 บันทึกลงฐานข้อมูล';
+}
+
+// ===== RECORDS VIEW =====
+async function refreshRecords() {
+  if(!allRecords.length) allRecords = await DB.getRecords();
+  renderRecordTable(allRecords);
+  document.getElementById('rec-total-lbl').textContent = allRecords.length + ' รายการทั้งหมด';
+}
+function filterRecords(q) {
+  const filtered = allRecords.filter(r => [r.date,r.hospital,r.note].some(v=>(v||'').includes(q)));
+  renderRecordTable(filtered);
+}
+function renderRecordTable(records) {
+  const tbody = document.getElementById('rec-tbody');
+  const empty = document.getElementById('rec-empty');
+  if(!records.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = records.map((r,i) => {
+    const d = new Date(r.date).toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric'});
+    const conf = Math.round((r.confidence||0.9)*100);
+    const cc = conf>=90?'var(--green)':conf>=70?'#f59e0b':'var(--red)';
+    return `<tr style="animation-delay:${i*.04}s">
+      <td><div style="font-weight:700">${d}</div>${r.note?`<div style="font-size:11px;color:var(--muted)">${r.note}</div>`:''}</td>
+      <td>${r.hospital||'—'}</td>
+      <td><span style="font-weight:800;color:var(--blue)">${r.count||0}</span> รายการ</td>
+      <td>${(r.abnormal||0)>0?`<span class="tag thi">${r.abnormal} รายการ</span>`:'<span class="tag tok">ปกติทั้งหมด</span>'}</td>
+      <td><span style="font-weight:700;color:${cc}">${conf}%</span></td>
+      <td><button class="rec-del" onclick="delRecord('${r.id}')" title="ลบ">🗑</button></td>
+    </tr>`;
+  }).join('');
+}
+async function delRecord(id) {
+  if(!confirm('ลบรายการนี้?')) return;
+  await DB.deleteRecord(id);
+  allRecords = await DB.getRecords();
+  refreshRecords();
+  toast('ลบแล้ว','✅');
+}
+
+// ===== PROFILE =====
+async function loadProfile() {
+  const p = await DB.getProfile();
+  ['name','age','sex','weight','height','blood','disease','allergy','doctor','hospital'].forEach(k=>{
+    const el = document.getElementById('p-'+k); if(el) el.value = p[k]||'';
+  });
+  renderProfileHero(p);
+}
+async function saveProfile() {
+  const p = {};
+  ['name','age','sex','weight','height','blood','disease','allergy','doctor','hospital'].forEach(k=>{
+    const el = document.getElementById('p-'+k); if(el) p[k] = el.value;
+  });
+  await DB.saveProfile(p);
+  renderProfileHero(p);
+  document.getElementById('greet-name').textContent = (p.name?.split(' ')[0]||'คุณ') + '! 👋';
+  toast('บันทึกโปรไฟล์แล้ว 💾','✅');
+}
+function renderProfileHero(p) {
+  document.getElementById('ph-name').textContent = p.name||'ตั้งชื่อได้เลย ✏️';
+  const bmi = p.weight&&p.height ? (p.weight/((p.height/100)**2)).toFixed(1) : null;
+  document.getElementById('ph-meta').textContent = [p.age?p.age+' ปี':null,p.sex,p.blood?'กรุ๊ป '+p.blood:null,bmi?'BMI '+bmi:null].filter(Boolean).join(' · ')||'กรุณากรอกข้อมูล';
+  document.getElementById('ph-chips').innerHTML = [p.disease,p.allergy,p.hospital].filter(Boolean).map(c=>`<div class="ph-chip">${c}</div>`).join('');
+}
+
+// ===== GOALS =====
+async function loadGoals() {
+  const saved = await DB.getGoals();
+  document.querySelectorAll('.goal-card').forEach(c=>c.classList.toggle('picked',saved.includes(c.dataset.goal)));
+}
+function toggleGoal(el) { el.classList.toggle('picked'); }
+async function saveGoals() {
+  const picked = [...document.querySelectorAll('.goal-card.picked')].map(c=>c.dataset.goal);
+  await DB.saveGoals(picked);
+  toast('บันทึกเป้าหมายแล้ว 🎯','✅');
+}
+
+// ===== MEDS =====
+async function addMed() {
+  const name = document.getElementById('med-name').value.trim();
+  if(!name) return toast('กรุณากรอกชื่อยาก่อน','⚠️');
+  await DB.saveMed({ name, dose: document.getElementById('med-dose').value, med_type: document.getElementById('med-type').value });
+  document.getElementById('med-name').value = ''; document.getElementById('med-dose').value = '';
+  renderMeds(); toast('เพิ่มรายการแล้ว 💊','✅');
+}
+async function renderMeds() {
+  const meds = await DB.getMeds();
+  const list = document.getElementById('med-list');
+  if(!meds.length) { list.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px;font-weight:600">ยังไม่มีรายการ</div>'; return; }
+  list.innerHTML = meds.map(m=>`
+    <div class="med-item">
+      <div><div class="med-name">${m.med_type==='วิตามิน'?'🌟':m.med_type==='ยาสมุนไพร'?'🌿':'💊'} ${m.name}</div><div class="med-dose">${m.dose||'ไม่ระบุขนาด'} · ${m.med_type||'ยา'}</div></div>
+      <button class="danger-btn" onclick="delMed('${m.id}')">🗑 ลบ</button>
+    </div>`).join('');
+}
+async function delMed(id) { await DB.deleteMed(id); renderMeds(); toast('ลบแล้ว','✅'); }
+
+// ===== EXPORT =====
+async function doExportAll() {
+  const records = await DB.getRecords();
+  const profile = await DB.getProfile();
+  const data = { profile, records, exported_at: new Date().toISOString(), source: isDemoMode ? 'localStorage' : 'supabase' };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download = 'supk-export-'+Date.now()+'.json'; a.click();
+  toast('Export ข้อมูลทั้งหมดแล้ว ⬇️','✅');
+}
+
+// ===== MISC =====
+function demoData() {
+  return { patient_name:'สมชาย ใจดี', report_date: new Date().toISOString().split('T')[0], hospital:'โรงพยาบาลสุขภาพดี', overall_confidence:0.94, items:[
+    {name_th:'น้ำตาลในเลือด',name_en:'Fasting Blood Sugar',value:'105',unit:'mg/dL',reference_range:'70-100',status:'high',confidence:0.97},
+    {name_th:'คอเลสเตอรอลรวม',name_en:'Total Cholesterol',value:'185',unit:'mg/dL',reference_range:'<200',status:'normal',confidence:0.95},
+    {name_th:'ไตรกลีเซอไรด์',name_en:'Triglycerides',value:'220',unit:'mg/dL',reference_range:'<150',status:'high',confidence:0.93},
+    {name_th:'HDL',name_en:'HDL Cholesterol',value:'45',unit:'mg/dL',reference_range:'>40',status:'normal',confidence:0.96},
+    {name_th:'ยูริกแอซิด',name_en:'Uric Acid',value:'7.8',unit:'mg/dL',reference_range:'3.5-7.2',status:'high',confidence:0.91},
+    {name_th:'ฮีโมโกลบิน',name_en:'Hemoglobin',value:'13.5',unit:'g/dL',reference_range:'12-16',status:'normal',confidence:0.99},
+  ]};
+}
+function showSetup() {
+  document.getElementById('setup-screen').style.display = 'block';
+  if(SUPABASE_URL) document.getElementById('setup-url').value = SUPABASE_URL;
+  if(SUPABASE_KEY) document.getElementById('setup-key').value = SUPABASE_KEY;
+}
+function copyCode(btn) {
+  const code = btn.parentElement.innerText.replace('Copy\n','');
+  navigator.clipboard.writeText(code).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',2000);});
+}
+function showLoader(txt) { document.getElementById('loader-txt').textContent = txt||'กำลังโหลด...'; document.getElementById('loader').style.display='flex'; }
+function hideLoader() { document.getElementById('loader').style.display='none'; }
+function toast(msg,icon) {
+  const t=document.getElementById('toast');
+  document.getElementById('tico').textContent=icon||'✅';
+  document.getElementById('tmsg').textContent=msg;
+  t.classList.add('show'); clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'),3200);
+}
+</script>
+</body>
+</html>
