@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUPK · สแกนผลตรวจสุขภาพ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pink:#ff6b9d; --orange:#ff8c42; --yellow:#ffd166; --green:#06d6a0;
+  --teal:#0cb4c5; --blue:#4f8ef7; --purple:#a259ff; --red:#ff4d6d;
+  --bg:#fff9f4; --white:#ffffff; --text:#2d2d2d; --muted:#8b8b8b;
+  --border:#f0e8e0; --radius:18px; --shadow:0 4px 24px rgba(0,0,0,0.08);
+  --font:'Nunito','Noto Sans Thai',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background:
+  radial-gradient(ellipse 600px 400px at 10% 0%,rgba(255,107,157,0.12) 0%,transparent 70%),
+  radial-gradient(ellipse 500px 350px at 90% 100%,rgba(79,142,247,0.12) 0%,transparent 70%),
+  radial-gradient(ellipse 400px 300px at 50% 50%,rgba(6,214,160,0.07) 0%,transparent 70%);
+  pointer-events:none;}
+.app{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 20px 80px;}
+header{padding:28px 0 24px;display:flex;align-items:center;justify-content:space-between;animation:slideD .5s ease;}
+@keyframes slideD{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+.logo{display:flex;align-items:center;gap:14px;}
+.logo-bubble{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--pink),var(--orange));display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 6px 20px rgba(255,107,157,0.35);animation:wiggle 3s ease-in-out infinite;}
+@keyframes wiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.logo-text{font-size:22px;font-weight:800;letter-spacing:-.5px;}
+.logo-grad{background:linear-gradient(90deg,var(--pink),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-sub{font-size:12px;color:var(--muted);margin-top:2px;font-weight:600;}
+.badge-pill{background:linear-gradient(135deg,var(--blue),var(--purple));color:white;padding:6px 16px;border-radius:50px;font-size:12px;font-weight:700;box-shadow:0 4px 14px rgba(79,142,247,0.35);}
+.nav{display:flex;gap:6px;margin-bottom:28px;padding:6px;background:var(--white);border-radius:50px;width:fit-content;box-shadow:var(--shadow);}
+.nb{padding:10px 22px;border-radius:50px;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:700;background:transparent;color:var(--muted);transition:all .25s;display:flex;align-items:center;gap:6px;}
+.nb.on{background:linear-gradient(135deg,var(--pink),var(--orange));color:white;box-shadow:0 4px 14px rgba(255,107,157,0.4);}
+.nb:hover:not(.on){color:var(--text);background:var(--bg);}
+.panel{display:none;animation:fadeU .35s ease;}
+.panel.on{display:block;}
+@keyframes fadeU{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.upload-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+@media(max-width:600px){.upload-row{grid-template-columns:1fr;}}
+.drop-card{background:var(--white);border-radius:var(--radius);border:2.5px dashed #ffd0e0;padding:36px 20px;text-align:center;cursor:pointer;position:relative;overflow:hidden;transition:all .25s;box-shadow:var(--shadow);}
+.drop-card:hover,.drop-card.dov{border-color:var(--pink);background:#fff0f5;transform:translateY(-3px);box-shadow:0 8px 30px rgba(255,107,157,0.2);}
+.drop-card input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.drop-emoji{font-size:38px;margin-bottom:10px;display:block;}
+.drop-title{font-size:15px;font-weight:700;margin-bottom:5px;}
+.drop-sub{font-size:12px;color:var(--muted);font-weight:600;}
+.cam-card{background:linear-gradient(135deg,#e8f8ff,#d6f5ee);border-radius:var(--radius);border:2.5px dashed #a8dff0;padding:36px 20px;text-align:center;cursor:pointer;transition:all .25s;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
+.cam-card:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(12,180,197,0.25);border-color:var(--teal);}
+.work-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:660px){.work-grid{grid-template-columns:1fr;}}
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.card-head{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1.5px solid var(--border);}
+.card-body{padding:18px;}
+.preview-img{width:100%;border-radius:10px;display:none;}
+.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;color:var(--muted);gap:8px;font-size:13px;font-weight:600;}
+.ph span:first-child{font-size:32px;opacity:.35;}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1.5px solid var(--border);font-size:13px;}
+.info-row:last-child{border:none;}
+.il{color:var(--muted);font-weight:600;}
+.iv{font-weight:700;}
+.scan-btn{width:100%;margin-top:20px;padding:16px;background:linear-gradient(135deg,var(--pink),var(--orange));border:none;border-radius:var(--radius);color:white;font-family:var(--font);font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;box-shadow:0 6px 20px rgba(255,107,157,0.4);display:flex;align-items:center;justify-content:center;gap:10px;}
+.scan-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(255,107,157,0.5);}
+.scan-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+.spin{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.35);border-top-color:white;border-radius:50%;animation:sp .7s linear infinite;display:none;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.stream-box{background:#f8f4ff;border-radius:12px;padding:14px;font-size:12px;line-height:1.7;color:var(--purple);font-family:monospace;min-height:60px;display:none;border:1.5px solid #e0d0ff;margin-top:14px;white-space:pre-wrap;word-break:break-word;max-height:120px;overflow-y:auto;}
+.summary-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.sum-card{background:var(--white);border-radius:var(--radius);padding:16px;text-align:center;box-shadow:var(--shadow);border-top:4px solid transparent;}
+.sum-card.bl{border-color:var(--blue)}.sum-card.re{border-color:var(--red)}.sum-card.gr{border-color:var(--green)}
+.sum-num{font-size:28px;font-weight:800;}
+.sum-lbl{font-size:11px;color:var(--muted);font-weight:700;margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+.result-wrap{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.rhead{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--border);}
+.rtitle{font-size:14px;font-weight:800;}
+.rdate{font-size:11px;color:var(--muted);font-weight:600;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);background:#fafafa;border-bottom:1.5px solid var(--border);}
+td{padding:11px 14px;font-size:13px;border-bottom:1px solid #f5f0ea;vertical-align:middle;}
+tr:last-child td{border:none;}
+tr:hover td{background:#fffbf7;}
+@keyframes rPop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+tbody tr{animation:rPop .3s ease both;}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:50px;font-size:11px;font-weight:700;}
+.tok{background:#e8fdf6;color:#059669;}
+.thi{background:#fff0f3;color:#e11d48;}
+.tlo{background:#fff8e1;color:#d97706;}
+.tuk{background:#f3f4f6;color:#6b7280;}
+input.ei{width:80px;padding:5px 8px;border:2px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;background:#f9f9f9;color:var(--text);transition:border-color .2s;}
+input.ei:focus{outline:none;border-color:var(--pink);background:white;}
+.cw{display:flex;align-items:center;gap:7px;}
+.ct{width:48px;height:6px;background:#f0e8e0;border-radius:3px;overflow:hidden;}
+.cf{height:100%;border-radius:3px;}
+.actions{display:flex;gap:10px;padding:16px 20px;flex-wrap:wrap;border-top:1.5px solid var(--border);}
+.ab{padding:9px 18px;border-radius:50px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.aj{background:#f0f0ff;color:var(--purple)}.aj:hover{background:#e0e0ff;}
+.ac{background:#e8fff6;color:#059669}.ac:hover{background:#d0ffe8;}
+.ar{background:#fff8e8;color:var(--orange)}.ar:hover{background:#fff0d0;}
+.as{background:linear-gradient(135deg,var(--blue),var(--purple));color:white;box-shadow:0 4px 14px rgba(79,142,247,0.35);}
+.as:hover{box-shadow:0 6px 20px rgba(79,142,247,0.5);transform:translateY(-1px);}
+.json-pre{font-family:monospace;font-size:11.5px;line-height:1.65;color:#7c3aed;background:#f8f4ff;border-radius:12px;padding:16px;margin:0 20px 16px;overflow:auto;max-height:280px;display:none;border:1.5px solid #e0d0ff;white-space:pre;word-break:break-word;}
+.hist-list{display:flex;flex-direction:column;gap:12px;}
+.hist-card{background:var(--white);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all .2s;border-left:5px solid var(--pink);}
+.hist-card:nth-child(2n){border-left-color:var(--blue);}
+.hist-card:nth-child(3n){border-left-color:var(--green);}
+.hist-card:hover{transform:translateX(4px);box-shadow:0 6px 24px rgba(0,0,0,0.12);}
+.hname{font-size:15px;font-weight:800;}
+.hmeta{font-size:12px;color:var(--muted);font-weight:600;margin-top:3px;}
+.htags{display:flex;gap:6px;margin-top:6px;}
+.harr{font-size:22px;color:var(--muted);}
+.empty-box{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 20px;gap:12px;color:var(--muted);text-align:center;}
+.ee{font-size:48px;animation:bounce 2s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.et{font-size:14px;font-weight:700;}
+.es{font-size:12px;}
+#cam-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.9);flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+#cam-overlay.show{display:flex;}
+#cam-video{width:min(88vw,480px);border-radius:20px;border:3px solid var(--pink);}
+.cam-controls{display:flex;gap:12px;}
+.csnap{padding:14px 32px;border-radius:50px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--pink),var(--orange));color:white;font-family:var(--font);font-size:15px;font-weight:800;box-shadow:0 6px 20px rgba(255,107,157,0.5);}
+.ccancel{padding:14px 24px;border-radius:50px;border:2px solid rgba(255,255,255,.3);background:transparent;color:white;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--white);border-radius:50px;padding:12px 22px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;box-shadow:0 8px 32px rgba(0,0,0,.15);opacity:0;transition:all .3s;z-index:999;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.img-wrap{position:relative;overflow:hidden;border-radius:10px;}
+.scan-line{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--pink),var(--orange),transparent);border-radius:2px;animation:slm 1.5s ease-in-out infinite;display:none;top:0;}
+@keyframes slm{0%{top:0%;opacity:1}100%{top:100%;opacity:0}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-bubble">🩺</div>
+      <div>
+        <div class="logo-text"><span class="logo-grad">SUPK</span> Health</div>
+        <div class="logo-sub">สแกนผลตรวจสุขภาพด้วย AI ✨</div>
+      </div>
+    </div>
+    <div class="badge-pill">Module #1 · OCR</div>
+  </header>
+
+  <div class="nav">
+    <button class="nb on" onclick="goTab('scan',this)">🔬 สแกน</button>
+    <button class="nb" onclick="goTab('results',this)">📊 ผลลัพธ์</button>
+    <button class="nb" onclick="goTab('history',this)">🗂 ประวัติ</button>
+  </div>
+
+  <!-- SCAN -->
+  <div class="panel on" id="tab-scan">
+    <div class="upload-row">
+      <div class="drop-card" id="dropzone" ondragover="ddov(event)" ondragleave="ddl()" ondrop="ddrop(event)">
+        <input type="file" accept="image/*" onchange="pickFile(this.files[0])">
+        <span class="drop-emoji">🖼️</span>
+        <div class="drop-title">อัปโหลดรูปภาพ</div>
+        <div class="drop-sub">JPG / PNG · ลากวางได้เลย!</div>
+      </div>
+      <div class="cam-card" onclick="openCam()">
+        <span class="drop-emoji">📷</span>
+        <div class="drop-title">ถ่ายรูปจากกล้อง</div>
+        <div class="drop-sub">รองรับมือถือ · แตะเปิดกล้อง</div>
+      </div>
+    </div>
+    <div class="work-grid">
+      <div class="card">
+        <div class="card-head">
+          <span>รูปภาพที่เลือก</span>
+          <span id="img-ok" style="font-size:11px;font-weight:800;color:var(--green);display:none">✓ พร้อมสแกน</span>
+        </div>
+        <div class="card-body">
+          <div class="img-wrap">
+            <img id="preview" class="preview-img" alt="preview">
+            <div class="scan-line" id="scan-line"></div>
+          </div>
+          <div class="ph" id="ph1"><span>🖼️</span><span>ยังไม่มีรูปภาพ</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span>ข้อมูลไฟล์</span></div>
+        <div class="card-body" id="file-info">
+          <div class="ph" id="ph2"><span>📋</span><span>รายละเอียดจะแสดงหลังเลือกไฟล์</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="stream-box" id="sbox"></div>
+    <button class="scan-btn" id="sbtn" disabled onclick="doScan()">
+      <div class="spin" id="spin"></div>
+      <span id="slbl">👆 เลือกรูปภาพก่อนนะ</span>
+    </button>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="panel" id="tab-results">
+    <div id="res-empty" class="empty-box">
+      <div class="ee">🔍</div>
+      <div class="et">ยังไม่มีผลการสแกน</div>
+      <div class="es">ไปที่แท็บ "สแกน" แล้วเลือกรูปก่อนนะ 😊</div>
+    </div>
+    <div id="res-content" style="display:none">
+      <div class="summary-row">
+        <div class="sum-card bl"><div class="sum-num" id="st" style="color:var(--blue)">0</div><div class="sum-lbl">รายการทั้งหมด</div></div>
+        <div class="sum-card re"><div class="sum-num" id="sa" style="color:var(--red)">0</div><div class="sum-lbl">ค่าผิดปกติ</div></div>
+        <div class="sum-card gr"><div class="sum-num" id="sc" style="color:var(--green)">-</div><div class="sum-lbl">ความแม่นยำ</div></div>
+      </div>
+      <div class="result-wrap">
+        <div class="rhead">
+          <div class="rtitle">🩺 ผลตรวจสุขภาพ</div>
+          <div class="rdate" id="rdate"></div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>รายการตรวจ</th><th>ค่าที่วัดได้</th><th>หน่วย</th>
+            <th>ค่าอ้างอิง</th><th>สถานะ</th><th>ความแม่นยำ</th>
+          </tr></thead>
+          <tbody id="res-body"></tbody>
+        </table>
+        <div class="actions">
+          <button class="ab aj" onclick="doExport('json')">⬇️ JSON</button>
+          <button class="ab ac" onclick="doExport('csv')">⬇️ CSV</button>
+          <button class="ab ar" onclick="toggleRaw()">{ } Raw</button>
+          <button class="ab as" onclick="doSaveHist()">💾 บันทึก History</button>
+        </div>
+        <div class="json-pre" id="jpre"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="panel" id="tab-history">
+    <div id="hist-empty" class="empty-box">
+      <div class="ee">📂</div>
+      <div class="et">ยังไม่มีประวัติ</div>
+      <div class="es">กด "บันทึก History" หลังสแกนเสร็จ</div>
+    </div>
+    <div class="hist-list" id="hist-list"></div>
+  </div>
+</div>
+
+<div id="cam-overlay">
+  <video id="cam-video" autoplay playsinline muted></video>
+  <div class="cam-controls">
+    <button class="csnap" onclick="snapPhoto()">📸 ถ่ายรูป</button>
+    <button class="ccancel" onclick="closeCam()">✕ ยกเลิก</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="tico"></span><span id="tmsg"></span></div>
+
+<script>
+let curFile=null,curResult=null,camStream=null;
+let hist=JSON.parse(localStorage.getItem('supk-hist')||'[]');
+
+function goTab(name,el){
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('tab-'+name).classList.add('on');
+  if(name==='history') renderHist();
+}
+
+function ddov(e){e.preventDefault();document.getElementById('dropzone').classList.add('dov');}
+function ddl(){document.getElementById('dropzone').classList.remove('dov');}
+function ddrop(e){e.preventDefault();ddl();if(e.dataTransfer.files[0])pickFile(e.dataTransfer.files[0]);}
+
+function pickFile(f){
+  if(!f||!f.type.startsWith('image/')) return toast('กรุณาเลือกไฟล์รูปภาพนะ 🙏','⚠️');
+  curFile=f;
+  const url=URL.createObjectURL(f);
+  const img=document.getElementById('preview');
+  img.src=url;img.style.display='block';
+  document.getElementById('ph1').style.display='none';
+  document.getElementById('img-ok').style.display='inline';
+  const kb=(f.size/1024).toFixed(1);
+  const ext=f.type.replace('image/','').toUpperCase();
+  document.getElementById('file-info').innerHTML=`
+    <div class="info-row"><span class="il">📁 ชื่อไฟล์</span><span class="iv" style="font-size:12px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${f.name}">${f.name}</span></div>
+    <div class="info-row"><span class="il">⚖️ ขนาด</span><span class="iv">${kb} KB</span></div>
+    <div class="info-row"><span class="il">🖼️ ประเภท</span><span class="iv">${ext}</span></div>
+    <div class="info-row"><span class="il">🤖 AI Engine</span><span class="iv" style="color:var(--purple)">Claude Vision</span></div>
+    <div class="info-row"><span class="il">🌏 ภาษา</span><span class="iv">ไทย + English</span></div>
+    <div class="info-row"><span class="il">✅ สถานะ</span><span class="iv" style="color:var(--green)">พร้อมสแกน!</span></div>`;
+  document.getElementById('sbtn').disabled=false;
+  document.getElementById('slbl').textContent='🔬 เริ่มสแกนด้วย AI!';
+}
+
+async function openCam(){
+  try{
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}}});
+    document.getElementById('cam-video').srcObject=camStream;
+    document.getElementById('cam-overlay').classList.add('show');
+  }catch(e){toast('ไม่สามารถเปิดกล้องได้ 📷','⚠️');}
+}
+function closeCam(){if(camStream)camStream.getTracks().forEach(t=>t.stop());document.getElementById('cam-overlay').classList.remove('show');}
+function snapPhoto(){
+  const v=document.getElementById('cam-video');
+  const c=document.createElement('canvas');
+  c.width=v.videoWidth;c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  c.toBlob(b=>{closeCam();pickFile(new File([b],'cam-'+Date.now()+'.jpg',{type:'image/jpeg'}));},'image/jpeg',0.92);
+}
+
+async function doScan(){
+  if(!curFile)return;
+  const btn=document.getElementById('sbtn');
+  const spin=document.getElementById('spin');
+  const lbl=document.getElementById('slbl');
+  const sl=document.getElementById('scan-line');
+  const sb=document.getElementById('sbox');
+  btn.disabled=true;spin.style.display='block';
+  lbl.textContent='กำลังวิเคราะห์... ⏳';
+  sl.style.display='block';sb.style.display='block';sb.textContent='🤖 ส่งรูปให้ AI วิเคราะห์...\n';
+  try{
+    const b64=await toB64(curFile);
+    sb.textContent+='📡 เชื่อมต่อ Claude Vision API...\n';
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:2000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:curFile.type,data:b64}},
+          {type:'text',text:`You are a medical OCR specialist. Analyze this Thai/English health checkup document.
+Extract ALL test results. Return ONLY valid JSON, no markdown:
+{"patient_name":"string or null","report_date":"YYYY-MM-DD or null","hospital":"string or null","overall_confidence":0.95,"items":[{"name_th":"ชื่อไทย","name_en":"English","value":"string","unit":"string","reference_range":"string","status":"normal|high|low|unknown","confidence":0.95}]}
+Rules: preserve Thai text, status based on reference range, confidence=OCR certainty 0-1.`}
+        ]}]
+      })
+    });
+    const data=await resp.json();
+    sb.textContent+='✅ ได้รับผลแล้ว กำลังประมวลผล...\n';
+    const raw=data.content?.[0]?.text||'';
+    let parsed;
+    try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
+    catch{parsed=demoData();sb.textContent+='⚠️ ใช้ข้อมูลตัวอย่าง (ไม่พบ API key)\n';}
+    curResult=parsed;
+    sb.textContent+=`🎉 เสร็จแล้ว! พบ ${parsed.items.length} รายการ`;
+    renderResults(parsed);
+    setTimeout(()=>{document.querySelectorAll('.nb')[1].click();},800);
+    toast(`สแกนเสร็จ! พบ ${parsed.items.length} รายการ 🎉`,'✅');
+  }catch(err){
+    console.error(err);
+    curResult=demoData();
+    sb.textContent+='⚠️ Demo mode — ข้อมูลตัวอย่าง\n';
+    renderResults(curResult);
+    setTimeout(()=>{document.querySelectorAll('.nb')[1].click();},800);
+    toast('Demo mode 🎨','ℹ️');
+  }
+  btn.disabled=false;spin.style.display='none';
+  lbl.textContent='🔁 สแกนอีกครั้ง';sl.style.display='none';
+}
+
+function toB64(f){return new Promise((ok,err)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=err;r.readAsDataURL(f);});}
+
+function demoData(){
+  return{patient_name:'สมชาย ใจดี',report_date:'2025-03-10',hospital:'โรงพยาบาลสุขภาพดี',overall_confidence:0.94,items:[
+    {name_th:'น้ำตาลในเลือด',name_en:'Fasting Blood Sugar',value:'105',unit:'mg/dL',reference_range:'70-100',status:'high',confidence:0.97},
+    {name_th:'คอเลสเตอรอลรวม',name_en:'Total Cholesterol',value:'185',unit:'mg/dL',reference_range:'<200',status:'normal',confidence:0.95},
+    {name_th:'ไตรกลีเซอไรด์',name_en:'Triglycerides',value:'220',unit:'mg/dL',reference_range:'<150',status:'high',confidence:0.93},
+    {name_th:'HDL คอเลสเตอรอล',name_en:'HDL Cholesterol',value:'45',unit:'mg/dL',reference_range:'>40',status:'normal',confidence:0.96},
+    {name_th:'LDL คอเลสเตอรอล',name_en:'LDL Cholesterol',value:'112',unit:'mg/dL',reference_range:'<130',status:'normal',confidence:0.94},
+    {name_th:'ครีอะตินิน',name_en:'Creatinine',value:'0.9',unit:'mg/dL',reference_range:'0.6-1.2',status:'normal',confidence:0.98},
+    {name_th:'ยูริกแอซิด',name_en:'Uric Acid',value:'7.8',unit:'mg/dL',reference_range:'3.5-7.2',status:'high',confidence:0.91},
+    {name_th:'ฮีโมโกลบิน',name_en:'Hemoglobin',value:'13.5',unit:'g/dL',reference_range:'12-16',status:'normal',confidence:0.99},
+    {name_th:'AST (SGOT)',name_en:'AST',value:'28',unit:'U/L',reference_range:'10-40',status:'normal',confidence:0.93},
+    {name_th:'ความดันโลหิต',name_en:'Blood Pressure',value:'128/82',unit:'mmHg',reference_range:'<120/80',status:'high',confidence:0.96},
+  ]};
+}
+
+function renderResults(data){
+  document.getElementById('res-empty').style.display='none';
+  document.getElementById('res-content').style.display='block';
+  const abn=data.items.filter(i=>i.status!=='normal'&&i.status!=='unknown').length;
+  document.getElementById('st').textContent=data.items.length;
+  document.getElementById('sa').textContent=abn;
+  document.getElementById('sc').textContent=Math.round((data.overall_confidence||0.9)*100)+'%';
+  let ds=data.report_date||'';
+  if(ds){try{ds=new Date(ds).toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});}catch{}}
+  document.getElementById('rdate').textContent=ds||new Date().toLocaleDateString('th-TH');
+  const tbody=document.getElementById('res-body');
+  tbody.innerHTML='';
+  data.items.forEach((item,i)=>{
+    const conf=Math.round((item.confidence||0.9)*100);
+    const cc=conf>=90?'#06d6a0':conf>=70?'#f59e0b':'#ef4444';
+    const badge=item.status==='normal'?'<span class="tag tok">✓ ปกติ</span>':
+      item.status==='high'?'<span class="tag thi">↑ สูง</span>':
+      item.status==='low'?'<span class="tag tlo">↓ ต่ำ</span>':
+      '<span class="tag tuk">— ไม่ทราบ</span>';
+    const tr=document.createElement('tr');
+    tr.style.animationDelay=(i*.045)+'s';
+    tr.innerHTML=`<td><div style="font-weight:700;font-size:13px">${item.name_th}</div><div style="font-size:11px;color:var(--muted);font-weight:600">${item.name_en}</div></td>
+      <td><input class="ei" value="${item.value}" onchange="editVal(${i},this.value)" title="แก้ไขค่าได้เลย"></td>
+      <td style="font-size:12px;color:var(--muted);font-weight:700">${item.unit}</td>
+      <td style="font-size:12px;color:var(--muted);font-weight:600">${item.reference_range}</td>
+      <td>${badge}</td>
+      <td><div class="cw"><div class="ct"><div class="cf" style="width:${conf}%;background:${cc}"></div></div><span style="font-size:11px;font-weight:700;color:${cc}">${conf}%</span></div></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('jpre').textContent=JSON.stringify(data,null,2);
+}
+
+function editVal(i,v){if(curResult){curResult.items[i].value=v;document.getElementById('jpre').textContent=JSON.stringify(curResult,null,2);}}
+function toggleRaw(){const el=document.getElementById('jpre');el.style.display=el.style.display==='none'||!el.style.display?'block':'none';}
+
+function doExport(type){
+  if(!curResult)return;
+  if(type==='json'){dl(JSON.stringify(curResult,null,2),'application/json','supk-'+Date.now()+'.json');toast('ดาวน์โหลด JSON เรียบร้อย 📄','✅');}
+  else{
+    let csv='รายการ,ค่าที่ได้,หน่วย,ค่าอ้างอิง,สถานะ,ความแม่นยำ\n';
+    curResult.items.forEach(it=>{csv+=`"${it.name_th}","${it.value}","${it.unit}","${it.reference_range}","${it.status}","${Math.round(it.confidence*100)}%"\n`;});
+    dl('\uFEFF'+csv,'text/csv;charset=utf-8','supk-'+Date.now()+'.csv');
+    toast('ดาวน์โหลด CSV เรียบร้อย 📊','✅');
+  }
+}
+function dl(content,mime,name){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download=name;a.click();}
+
+function doSaveHist(){
+  if(!curResult)return;
+  const e={id:Date.now(),date:new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'}),patient:curResult.patient_name||'ไม่ระบุชื่อ',hospital:curResult.hospital||'ไม่ระบุโรงพยาบาล',count:curResult.items.length,abnormal:curResult.items.filter(i=>i.status!=='normal'&&i.status!=='unknown').length,data:curResult};
+  hist.unshift(e);if(hist.length>50)hist=hist.slice(0,50);
+  localStorage.setItem('supk-hist',JSON.stringify(hist));
+  toast('บันทึกลง History แล้วนะ 💾','✅');
+}
+
+function renderHist(){
+  const list=document.getElementById('hist-list');
+  const empty=document.getElementById('hist-empty');
+  if(!hist.length){empty.style.display='flex';list.innerHTML='';return;}
+  empty.style.display='none';list.innerHTML='';
+  hist.forEach(h=>{
+    const card=document.createElement('div');
+    card.className='hist-card';
+    card.innerHTML=`<div><div class="hname">👤 ${h.patient}</div><div class="hmeta">🏥 ${h.hospital} · 📅 ${h.date}</div><div class="htags"><span class="tag tok">${h.count} รายการ</span>${h.abnormal?`<span class="tag thi">${h.abnormal} ผิดปกติ</span>`:''}</div></div><div class="harr">›</div>`;
+    card.onclick=()=>{curResult=h.data;renderResults(h.data);document.querySelectorAll('.nb')[1].click();};
+    list.appendChild(card);
+  });
+}
+
+function toast(msg,icon){
+  const t=document.getElementById('toast');
+  document.getElementById('tico').textContent=icon||'✅';
+  document.getElementById('tmsg').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+renderHist();
+</script>
+</body>
+</html>
