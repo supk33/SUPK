@@ -785,36 +785,28 @@ const DB = {
   },
   async getProfile() {
     if (!isDemoMode && sbClient) {
-      const { data } = await sbClient.from('profiles').select('*').eq('id', currentUser.id).limit(1);
-      return (data && data[0]) || {};
+      const { data } = await sbClient.from('profiles').select('*').eq('id', currentUser.id).single();
+      return data || {};
     }
     return JSON.parse(localStorage.getItem('supk2-profile') || '{}');
   },
   async saveProfile(p) {
     if (!isDemoMode && sbClient) {
-      const { error } = await sbClient.from('profiles').upsert(
-        { id: currentUser.id, ...p, updated_at: new Date().toISOString() },
-        { onConflict: 'id' }
-      );
-      if (error) console.error('saveProfile error:', error);
+      await sbClient.from('profiles').upsert({ id: currentUser.id, ...p, updated_at: new Date().toISOString() });
       return;
     }
     localStorage.setItem('supk2-profile', JSON.stringify(p));
   },
   async getGoals() {
     if (!isDemoMode && sbClient) {
-      const { data } = await sbClient.from('health_goals').select('goals').eq('user_id', currentUser.id).limit(1);
-      return (data && data[0]?.goals) || ['sugar'];
+      const { data } = await sbClient.from('health_goals').select('goals').eq('user_id', currentUser.id).single();
+      return data?.goals || ['sugar'];
     }
     return JSON.parse(localStorage.getItem('supk2-goals') || '["sugar"]');
   },
   async saveGoals(goals) {
     if (!isDemoMode && sbClient) {
-      const { error } = await sbClient.from('health_goals').upsert(
-        { user_id: currentUser.id, goals, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      );
-      if (error) console.error('saveGoals error:', error);
+      await sbClient.from('health_goals').upsert({ user_id: currentUser.id, goals, updated_at: new Date().toISOString() });
       return;
     }
     localStorage.setItem('supk2-goals', JSON.stringify(goals));
@@ -1104,8 +1096,14 @@ async function loadProfile() {
 }
 async function saveProfile() {
   const p = {};
-  ['name','age','sex','weight','height','blood','disease','allergy','doctor','hospital'].forEach(k=>{
-    const el = document.getElementById('p-'+k); if(el) p[k] = el.value;
+  ['name','sex','blood','disease','allergy','doctor','hospital'].forEach(k=>{
+    const el = document.getElementById('p-'+k);
+    if(el && el.value !== '') p[k] = el.value;
+  });
+  // numeric fields — only send if not empty
+  ['age','weight','height'].forEach(k=>{
+    const el = document.getElementById('p-'+k);
+    if(el && el.value !== '') p[k] = parseFloat(el.value);
   });
   await DB.saveProfile(p);
   renderProfileHero(p);
