@@ -1329,35 +1329,29 @@ async function doOCRScan(){
   sb.textContent='🤖 ส่งรูปให้ AI วิเคราะห์...\n';
   try{
     const b64=await new Promise((ok,err)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=err;r.readAsDataURL(ocrFile);});
-    sb.textContent+='📡 เชื่อมต่อ Claude Vision API...\n';
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    sb.textContent+='📡 กำลังอ่านชื่อ โรงพยาบาล และวันที่...\n';
+    const resp=await fetch('/api/ocr',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514', max_tokens:2000,
-        messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:ocrFile.type,data:b64}},
-          {type:'text',text:`You are a medical OCR specialist. Analyze this Thai/English health checkup document.
-Extract ALL test results. Return ONLY valid JSON, no markdown:
-{"patient_name":"string or null","report_date":"YYYY-MM-DD or null","hospital":"string or null","overall_confidence":0.95,"items":[{"name_th":"ชื่อไทย","name_en":"English","value":"string","unit":"string","reference_range":"string","status":"normal|high|low|unknown","confidence":0.95}]}
-Rules: preserve Thai text, status based on reference range, confidence=OCR certainty 0-1.`}
-        ]}]
-      })
+      body:JSON.stringify({ image_base64: b64, media_type: ocrFile.type })
     });
-    const data=await resp.json();
-    const raw=data.content?.[0]?.text||'';
-    let parsed;
-    try{ parsed=JSON.parse(raw.replace(/```json|```/g,'').trim()); }
-    catch{ parsed=ocrDemoData(); sb.textContent+='⚠️ ใช้ข้อมูลตัวอย่าง\n'; }
+    if(!resp.ok) throw new Error('API error '+resp.status);
+    const parsed=await resp.json();
+    if(parsed.error) throw new Error(parsed.error);
     ocrResult=parsed;
-    sb.textContent+=`🎉 เสร็จแล้ว! พบ ${parsed.items.length} รายการ`;
+    sb.textContent+=`✅ อ่านได้:\n`;
+    sb.textContent+=`   👤 ชื่อ: ${parsed.patient_name||'ไม่พบ'}\n`;
+    sb.textContent+=`   🏥 โรงพยาบาล: ${parsed.hospital||'ไม่พบ'}\n`;
+    sb.textContent+=`   📅 วันที่: ${parsed.report_date||'ไม่พบ'}\n`;
+    sb.textContent+=`   🔬 พบ ${parsed.items.length} รายการตรวจ`;
     ocrRenderResult(parsed);
     toast(`สแกนเสร็จ! พบ ${parsed.items.length} รายการ 🎉`,'✅');
   }catch(err){
+    sb.textContent+='⚠️ ไม่สามารถเชื่อมต่อ API ได้ — ใช้ข้อมูลตัวอย่างแทน\n';
+    sb.textContent+='💡 ตรวจสอบว่าตั้งค่า ANTHROPIC_API_KEY ใน Vercel แล้ว\n';
     ocrResult=ocrDemoData();
-    sb.textContent+='⚠️ Demo mode\n';
     ocrRenderResult(ocrResult);
-    toast('Demo mode 🎨','ℹ️');
+    toast('ไม่พบ API Key — ใช้ Demo data','⚠️');
   }
   btn.disabled=false; spin.style.display='none';
   lbl.textContent='🔁 สแกนอีกครั้ง'; sl.style.display='none';
@@ -1369,8 +1363,23 @@ function ocrRenderResult(data){
   document.getElementById('ocr-count-badge').textContent=data.items.length+' รายการ';
   const abnBadge=document.getElementById('ocr-abn-badge');
   if(abn>0){ abnBadge.textContent=abn+' ผิดปกติ'; abnBadge.style.display='inline'; }
+  // แสดงชื่อ โรงพยาบาล วันที่ที่อ่านได้
   document.getElementById('ocr-date').value=data.report_date||new Date().toISOString().split('T')[0];
   document.getElementById('ocr-hospital').value=data.hospital||'';
+  // แสดง patient info banner
+  const existingBanner = document.getElementById('ocr-patient-banner');
+  if(existingBanner) existingBanner.remove();
+  if(data.patient_name||data.hospital||data.report_date){
+    const banner=document.createElement('div');
+    banner.id='ocr-patient-banner';
+    banner.style.cssText='background:linear-gradient(135deg,rgba(6,214,160,.12),rgba(12,180,197,.08));border:1.5px solid rgba(6,214,160,.3);border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;';
+    banner.innerHTML=`
+      ${data.patient_name?`<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:3px">👤 ชื่อผู้ป่วย</div><div style="font-size:14px;font-weight:800;">${data.patient_name}</div></div>`:''}
+      ${data.hospital?`<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:3px">🏥 โรงพยาบาล</div><div style="font-size:14px;font-weight:800;">${data.hospital}</div></div>`:''}
+      ${data.report_date?`<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:3px">📅 วันที่ตรวจ</div><div style="font-size:14px;font-weight:800;">${data.report_date}</div></div>`:''}
+    `;
+    document.getElementById('ocr-result-section').prepend(banner);
+  }
   const tbody=document.getElementById('ocr-result-tbody');
   tbody.innerHTML=data.items.map((item,i)=>{
     const badge=item.status==='normal'?'<span style="background:#e8fdf6;color:#059669;padding:3px 9px;border-radius:50px;font-size:11px;font-weight:700;">✓ ปกติ</span>':
