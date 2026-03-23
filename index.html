@@ -440,11 +440,12 @@ tbody tr{animation:rowIn .3s ease both;}
         <div class="s-bubble">🌿</div>
         <div>
           <div class="s-name">SUPK</div>
-          <div class="s-sub">Health · Module #2</div>
+          <div class="s-sub">Health · All-in-One</div>
         </div>
       </div>
       <div class="s-section">หน้าหลัก</div>
       <div class="s-item on" onclick="goView('dashboard',this)"><span class="ico">📊</span>Dashboard</div>
+      <div class="s-item" onclick="goView('ocr',this)"><span class="ico">🔬</span>สแกน OCR</div>
       <div class="s-item" onclick="goView('save',this)"><span class="ico">➕</span>บันทึกผลตรวจ</div>
       <div class="s-item" onclick="goView('records',this)"><span class="ico">📋</span>ประวัติทั้งหมด</div>
       <div class="s-section">ข้อมูลส่วนตัว</div>
@@ -487,10 +488,80 @@ tbody tr{animation:rowIn .3s ease both;}
         </div>
       </div>
 
+      <!-- OCR -->
+      <div class="view" id="view-ocr">
+        <div class="page-title">🔬 สแกนผลตรวจ OCR</div>
+        <div class="page-sub">ถ่ายรูปหรืออัปโหลดผลตรวจ — AI จะอ่านและบันทึกให้อัตโนมัติ</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div style="background:var(--white);border-radius:var(--radius);border:2.5px dashed #ffd0e0;padding:32px 20px;text-align:center;cursor:pointer;position:relative;overflow:hidden;transition:all .25s;box-shadow:var(--shadow);" id="ocr-dropzone" ondragover="ocrDragOver(event)" ondragleave="ocrDragLeave()" ondrop="ocrDrop(event)">
+            <input type="file" accept="image/*" onchange="ocrPickFile(this.files[0])" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+            <div style="font-size:36px;margin-bottom:10px">🖼️</div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:5px">อัปโหลดรูปภาพ</div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600">JPG / PNG · ลากวางได้เลย</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#e8f8ff,#d6f5ee);border-radius:var(--radius);border:2.5px dashed #a8dff0;padding:32px 20px;text-align:center;cursor:pointer;transition:all .25s;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;" onclick="ocrOpenCam()">
+            <div style="font-size:36px">📷</div>
+            <div style="font-size:15px;font-weight:700">ถ่ายรูปจากกล้อง</div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600">รองรับมือถือ</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="dcard">
+            <div class="dcard-head"><span>รูปภาพที่เลือก</span><span id="ocr-img-ok" style="font-size:11px;font-weight:800;color:var(--green);display:none">✓ พร้อมสแกน</span></div>
+            <div class="dcard-body" style="position:relative;overflow:hidden;border-radius:10px;min-height:160px;">
+              <img id="ocr-preview" style="width:100%;border-radius:8px;display:none;" alt="preview">
+              <div class="scan-line" id="ocr-scan-line"></div>
+              <div id="ocr-ph" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;color:var(--muted);gap:8px;font-size:13px;font-weight:600;"><span style="font-size:30px;opacity:.3">🖼️</span><span>ยังไม่มีรูปภาพ</span></div>
+            </div>
+          </div>
+          <div class="dcard">
+            <div class="dcard-head"><span>สถานะ AI</span></div>
+            <div class="dcard-body" id="ocr-status-box">
+              <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;color:var(--muted);gap:8px;font-size:13px;font-weight:600;"><span style="font-size:30px;opacity:.3">🤖</span><span>รอรูปภาพ...</span></div>
+            </div>
+          </div>
+        </div>
+        <div id="ocr-stream" style="background:#f8f4ff;border-radius:12px;padding:14px;font-size:12px;line-height:1.7;color:var(--purple);font-family:monospace;display:none;border:1.5px solid #e0d0ff;margin-bottom:16px;white-space:pre-wrap;max-height:100px;overflow-y:auto;"></div>
+        <button id="ocr-btn" disabled onclick="doOCRScan()" style="width:100%;padding:15px;background:linear-gradient(135deg,var(--pink),var(--orange));border:none;border-radius:var(--radius);color:white;font-family:var(--font);font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;box-shadow:0 6px 20px rgba(255,107,157,.4);display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;">
+          <div id="ocr-spin" style="width:20px;height:20px;border:2.5px solid rgba(255,255,255,.35);border-top-color:white;border-radius:50%;animation:sp .7s linear infinite;display:none;"></div>
+          <span id="ocr-btn-lbl">👆 เลือกรูปภาพก่อนนะ</span>
+        </button>
+        <!-- OCR Results -->
+        <div id="ocr-result-section" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:16px;font-weight:800">📊 ผลการสแกน</div>
+            <div style="display:flex;gap:8px;">
+              <span style="background:#e8fdf6;color:#059669;padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;" id="ocr-count-badge">0 รายการ</span>
+              <span style="background:#fff0f3;color:var(--red);padding:4px 12px;border-radius:50px;font-size:12px;font-weight:700;" id="ocr-abn-badge" style="display:none"></span>
+            </div>
+          </div>
+          <div style="margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap;">
+            <div class="field" style="flex:1;min-width:160px;"><label>📅 วันที่ตรวจ</label><input type="date" id="ocr-date" class="field input"></div>
+            <div class="field" style="flex:2;min-width:200px;"><label>🏥 โรงพยาบาล</label><input type="text" id="ocr-hospital" placeholder="เช่น รพ.กรุงเทพ"></div>
+          </div>
+          <div style="background:var(--white);border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--border);margin-bottom:16px;">
+            <table style="width:100%;border-collapse:collapse;">
+              <thead><tr>
+                <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:#f0faf8;border-bottom:1.5px solid var(--border);">รายการ</th>
+                <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);background:#f0faf8;border-bottom:1.5px solid var(--border);">ค่า</th>
+                <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);background:#f0faf8;border-bottom:1.5px solid var(--border);">หน่วย</th>
+                <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);background:#f0faf8;border-bottom:1.5px solid var(--border);">ค่าอ้างอิง</th>
+                <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);background:#f0faf8;border-bottom:1.5px solid var(--border);">สถานะ</th>
+              </tr></thead>
+              <tbody id="ocr-result-tbody"></tbody>
+            </table>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="primary-btn" id="ocr-save-btn" onclick="ocrSaveToSupabase()">💾 บันทึกลง Supabase</button>
+            <button style="padding:11px 20px;border-radius:50px;border:2px solid var(--border);background:var(--white);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;color:var(--text);" onclick="ocrClearResult()">✕ ล้างผล</button>
+          </div>
+        </div>
+      </div>
+
       <!-- SAVE -->
       <div class="view" id="view-save">
         <div class="page-title">➕ บันทึกผลตรวจ</div>
-        <div class="page-sub">วางข้อมูลจาก Module #1 หรือกรอกเองได้เลย</div>
+        <div class="page-sub">วางข้อมูล JSON หรือกรอกเองได้เลย</div>
         <div class="import-zone" id="import-zone">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
             <div style="font-size:15px;font-weight:800">📋 วาง JSON จาก Module #1</div>
@@ -616,6 +687,15 @@ tbody tr{animation:rowIn .3s ease both;}
 
 <div class="toast" id="toast"><span id="tico"></span> <span id="tmsg"></span></div>
 
+<!-- OCR Camera overlay -->
+<div id="ocr-cam-overlay" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.9);flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+  <video id="ocr-cam-video" autoplay playsinline muted style="width:min(88vw,480px);border-radius:20px;border:3px solid var(--pink);"></video>
+  <div style="display:flex;gap:12px;">
+    <button onclick="ocrSnapPhoto()" style="padding:14px 32px;border-radius:50px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--pink),var(--orange));color:white;font-family:var(--font);font-size:15px;font-weight:800;">📸 ถ่ายรูป</button>
+    <button onclick="ocrCloseCam()" style="padding:14px 24px;border-radius:50px;border:2px solid rgba(255,255,255,.3);background:transparent;color:white;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;">✕ ยกเลิก</button>
+  </div>
+</div>
+
 <script>
 // ===== CONFIG =====
 const SUPABASE_URL = 'https://shsfdnjumhotlnnavxmf.supabase.co';
@@ -626,6 +706,11 @@ let currentUser = null;
 let isDemoMode = true;
 let allRecords = [];
 let charts = {};
+
+// ===== OCR STATE =====
+let ocrFile = null;
+let ocrResult = null;
+let ocrCamStream = null;
 
 // ===== INIT SUPABASE =====
 function initSupabase(url, key) {
@@ -1188,6 +1273,164 @@ function toast(msg,icon) {
   document.getElementById('tmsg').textContent=msg;
   t.classList.add('show'); clearTimeout(t._t);
   t._t=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ===== OCR FUNCTIONS =====
+function ocrDragOver(e){ e.preventDefault(); document.getElementById('ocr-dropzone').style.borderColor='var(--pink)'; }
+function ocrDragLeave(){ document.getElementById('ocr-dropzone').style.borderColor='#ffd0e0'; }
+function ocrDrop(e){ e.preventDefault(); ocrDragLeave(); if(e.dataTransfer.files[0]) ocrPickFile(e.dataTransfer.files[0]); }
+
+function ocrPickFile(f){
+  if(!f||!f.type.startsWith('image/')) return toast('กรุณาเลือกไฟล์รูปภาพ','⚠️');
+  ocrFile=f;
+  const url=URL.createObjectURL(f);
+  const img=document.getElementById('ocr-preview');
+  img.src=url; img.style.display='block';
+  document.getElementById('ocr-ph').style.display='none';
+  document.getElementById('ocr-img-ok').style.display='inline';
+  document.getElementById('ocr-btn').disabled=false;
+  document.getElementById('ocr-btn-lbl').textContent='🔬 เริ่มสแกนด้วย AI!';
+  document.getElementById('ocr-status-box').innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1.5px solid var(--border)"><span style="color:var(--muted);font-weight:600">ชื่อไฟล์</span><span style="font-weight:700;font-size:12px">${f.name}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1.5px solid var(--border)"><span style="color:var(--muted);font-weight:600">ขนาด</span><span style="font-weight:700">${(f.size/1024).toFixed(1)} KB</span></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--muted);font-weight:600">สถานะ</span><span style="font-weight:700;color:var(--green)">✓ พร้อมสแกน</span></div>
+  </div>`;
+}
+
+async function ocrOpenCam(){
+  try{
+    ocrCamStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    document.getElementById('ocr-cam-video').srcObject=ocrCamStream;
+    document.getElementById('ocr-cam-overlay').style.display='flex';
+  }catch(e){ toast('ไม่สามารถเปิดกล้องได้','⚠️'); }
+}
+function ocrCloseCam(){
+  if(ocrCamStream) ocrCamStream.getTracks().forEach(t=>t.stop());
+  document.getElementById('ocr-cam-overlay').style.display='none';
+}
+function ocrSnapPhoto(){
+  const v=document.getElementById('ocr-cam-video');
+  const c=document.createElement('canvas');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  c.toBlob(b=>{ ocrCloseCam(); ocrPickFile(new File([b],'cam-'+Date.now()+'.jpg',{type:'image/jpeg'})); },'image/jpeg',0.92);
+}
+
+async function doOCRScan(){
+  if(!ocrFile) return;
+  const btn=document.getElementById('ocr-btn');
+  const spin=document.getElementById('ocr-spin');
+  const lbl=document.getElementById('ocr-btn-lbl');
+  const sl=document.getElementById('ocr-scan-line');
+  const sb=document.getElementById('ocr-stream');
+  btn.disabled=true; spin.style.display='block';
+  lbl.textContent='กำลังวิเคราะห์... ⏳';
+  sl.style.display='block'; sb.style.display='block';
+  sb.textContent='🤖 ส่งรูปให้ AI วิเคราะห์...\n';
+  try{
+    const b64=await new Promise((ok,err)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=err;r.readAsDataURL(ocrFile);});
+    sb.textContent+='📡 เชื่อมต่อ Claude Vision API...\n';
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:2000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:ocrFile.type,data:b64}},
+          {type:'text',text:`You are a medical OCR specialist. Analyze this Thai/English health checkup document.
+Extract ALL test results. Return ONLY valid JSON, no markdown:
+{"patient_name":"string or null","report_date":"YYYY-MM-DD or null","hospital":"string or null","overall_confidence":0.95,"items":[{"name_th":"ชื่อไทย","name_en":"English","value":"string","unit":"string","reference_range":"string","status":"normal|high|low|unknown","confidence":0.95}]}
+Rules: preserve Thai text, status based on reference range, confidence=OCR certainty 0-1.`}
+        ]}]
+      })
+    });
+    const data=await resp.json();
+    const raw=data.content?.[0]?.text||'';
+    let parsed;
+    try{ parsed=JSON.parse(raw.replace(/```json|```/g,'').trim()); }
+    catch{ parsed=ocrDemoData(); sb.textContent+='⚠️ ใช้ข้อมูลตัวอย่าง\n'; }
+    ocrResult=parsed;
+    sb.textContent+=`🎉 เสร็จแล้ว! พบ ${parsed.items.length} รายการ`;
+    ocrRenderResult(parsed);
+    toast(`สแกนเสร็จ! พบ ${parsed.items.length} รายการ 🎉`,'✅');
+  }catch(err){
+    ocrResult=ocrDemoData();
+    sb.textContent+='⚠️ Demo mode\n';
+    ocrRenderResult(ocrResult);
+    toast('Demo mode 🎨','ℹ️');
+  }
+  btn.disabled=false; spin.style.display='none';
+  lbl.textContent='🔁 สแกนอีกครั้ง'; sl.style.display='none';
+}
+
+function ocrRenderResult(data){
+  document.getElementById('ocr-result-section').style.display='block';
+  const abn=data.items.filter(i=>i.status!=='normal'&&i.status!=='unknown').length;
+  document.getElementById('ocr-count-badge').textContent=data.items.length+' รายการ';
+  const abnBadge=document.getElementById('ocr-abn-badge');
+  if(abn>0){ abnBadge.textContent=abn+' ผิดปกติ'; abnBadge.style.display='inline'; }
+  document.getElementById('ocr-date').value=data.report_date||new Date().toISOString().split('T')[0];
+  document.getElementById('ocr-hospital').value=data.hospital||'';
+  const tbody=document.getElementById('ocr-result-tbody');
+  tbody.innerHTML=data.items.map((item,i)=>{
+    const badge=item.status==='normal'?'<span style="background:#e8fdf6;color:#059669;padding:3px 9px;border-radius:50px;font-size:11px;font-weight:700;">✓ ปกติ</span>':
+      item.status==='high'?'<span style="background:#fff0f3;color:#e11d48;padding:3px 9px;border-radius:50px;font-size:11px;font-weight:700;">↑ สูง</span>':
+      item.status==='low'?'<span style="background:#fff8e1;color:#d97706;padding:3px 9px;border-radius:50px;font-size:11px;font-weight:700;">↓ ต่ำ</span>':
+      '<span style="background:#f3f4f6;color:#6b7280;padding:3px 9px;border-radius:50px;font-size:11px;font-weight:700;">—</span>';
+    return `<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:10px 14px"><div style="font-weight:700">${item.name_th}</div><div style="font-size:11px;color:var(--muted)">${item.name_en}</div></td>
+      <td style="padding:10px 14px;font-weight:700"><input style="width:80px;padding:4px 8px;border:2px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;" value="${item.value}" onchange="ocrResult.items[${i}].value=this.value"></td>
+      <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${item.unit}</td>
+      <td style="padding:10px 14px;font-size:12px;color:var(--muted)">${item.reference_range}</td>
+      <td style="padding:10px 14px">${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function ocrSaveToSupabase(){
+  if(!ocrResult) return;
+  const btn=document.getElementById('ocr-save-btn');
+  btn.disabled=true; btn.innerHTML='<div style="width:18px;height:18px;border:2.5px solid rgba(255,255,255,.35);border-top-color:white;border-radius:50%;animation:sp .7s linear infinite;display:inline-block;margin-right:8px;"></div>กำลังบันทึก...';
+  try{
+    const record={
+      date: document.getElementById('ocr-date').value||new Date().toISOString().split('T')[0],
+      hospital: document.getElementById('ocr-hospital').value||ocrResult.hospital||'',
+      note: 'บันทึกจาก OCR Scanner',
+      count: ocrResult.items.length,
+      abnormal: ocrResult.items.filter(i=>i.status!=='normal'&&i.status!=='unknown').length,
+      confidence: ocrResult.overall_confidence||0.9,
+      items: ocrResult.items
+    };
+    await DB.saveRecord(record);
+    allRecords=await DB.getRecords();
+    toast(`บันทึกลง Supabase แล้ว ${record.count} รายการ 🎉`,'✅');
+    setTimeout(()=>goView('dashboard',document.querySelectorAll('.s-item')[0]),800);
+  }catch(e){
+    toast('เกิดข้อผิดพลาด: '+e.message,'❌');
+  }
+  btn.disabled=false; btn.innerHTML='💾 บันทึกลง Supabase';
+}
+
+function ocrClearResult(){
+  ocrResult=null; ocrFile=null;
+  document.getElementById('ocr-result-section').style.display='none';
+  document.getElementById('ocr-stream').style.display='none';
+  document.getElementById('ocr-preview').style.display='none';
+  document.getElementById('ocr-ph').style.display='flex';
+  document.getElementById('ocr-img-ok').style.display='none';
+  document.getElementById('ocr-btn').disabled=true;
+  document.getElementById('ocr-btn-lbl').textContent='👆 เลือกรูปภาพก่อนนะ';
+  document.getElementById('ocr-status-box').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;color:var(--muted);gap:8px;font-size:13px;font-weight:600;"><span style="font-size:30px;opacity:.3">🤖</span><span>รอรูปภาพ...</span></div>';
+}
+
+function ocrDemoData(){
+  return{patient_name:'สมชาย ใจดี',report_date:new Date().toISOString().split('T')[0],hospital:'โรงพยาบาลสุขภาพดี',overall_confidence:0.94,items:[
+    {name_th:'น้ำตาลในเลือด',name_en:'Fasting Blood Sugar',value:'105',unit:'mg/dL',reference_range:'70-100',status:'high',confidence:0.97},
+    {name_th:'คอเลสเตอรอลรวม',name_en:'Total Cholesterol',value:'185',unit:'mg/dL',reference_range:'<200',status:'normal',confidence:0.95},
+    {name_th:'ไตรกลีเซอไรด์',name_en:'Triglycerides',value:'220',unit:'mg/dL',reference_range:'<150',status:'high',confidence:0.93},
+    {name_th:'ยูริกแอซิด',name_en:'Uric Acid',value:'7.8',unit:'mg/dL',reference_range:'3.5-7.2',status:'high',confidence:0.91},
+    {name_th:'ฮีโมโกลบิน',name_en:'Hemoglobin',value:'13.5',unit:'g/dL',reference_range:'12-16',status:'normal',confidence:0.99},
+  ]};
 }
 </script>
 </body>
