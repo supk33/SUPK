@@ -1347,11 +1347,12 @@ async function doOCRScan(){
     ocrRenderResult(parsed);
     toast(`สแกนเสร็จ! พบ ${parsed.items.length} รายการ 🎉`,'✅');
   }catch(err){
-    sb.textContent+='⚠️ ไม่สามารถเชื่อมต่อ API ได้ — ใช้ข้อมูลตัวอย่างแทน\n';
-    sb.textContent+='💡 ตรวจสอบว่าตั้งค่า ANTHROPIC_API_KEY ใน Vercel แล้ว\n';
+    sb.textContent+='❌ Error: '+err.message+'
+';
+    
     ocrResult=ocrDemoData();
     ocrRenderResult(ocrResult);
-    toast('ไม่พบ API Key — ใช้ Demo data','⚠️');
+    toast('Error: '+err.message,'❌');
   }
   btn.disabled=false; spin.style.display='none';
   lbl.textContent='🔁 สแกนอีกครั้ง'; sl.style.display='none';
