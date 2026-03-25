@@ -19,6 +19,13 @@ module.exports = async function handler(req, res) {
 
   try {
     const { image_base64, media_type } = req.body;
+    console.log('[OCR API] Received request:', {
+      has_body: !!req.body,
+      body_keys: req.body ? Object.keys(req.body) : [],
+      has_image: !!image_base64,
+      image_length: image_base64?.length || 0,
+      media_type: media_type
+    });
     if (!image_base64) return res.status(400).json({ error: 'No image provided' });
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
