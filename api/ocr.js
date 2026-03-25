@@ -65,6 +65,13 @@ module.exports = async function handler(req, res) {
 
     const data = await response.json();
     if (!response.ok) {
+      // Handle 529 Overloaded with retry hint
+      if (response.status === 529) {
+        return res.status(503).json({ 
+          error: 'Anthropic API temporarily overloaded. Please try again in a moment.',
+          retry_after: 5
+        });
+      }
       return res.status(response.status).json({ error: data.error?.message || 'Anthropic API error' });
     }
 
