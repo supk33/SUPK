@@ -1362,9 +1362,7 @@ async function doOCRScan(){
     ocrRenderResult(parsed);
     toast(`สแกนเสร็จ! พบ ${parsed.items.length} รายการ 🎉`,'✅');
   }catch(err){
-    sb.textContent+='❌ Error: '+err.message+'
-';
-    
+    sb.textContent+='❌ Error: '+err.message+'\n';
     ocrResult=ocrDemoData();
     ocrRenderResult(ocrResult);
     toast('Error: '+err.message,'❌');
