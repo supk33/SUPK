@@ -1351,7 +1351,11 @@ async function doOCRScan(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ image_base64: b64, media_type: ocrFile.type })
     });
-    if(!resp.ok) throw new Error('API error '+resp.status);
+    if(!resp.ok) {
+      const errData = await resp.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('OCR API Error:', resp.status, errData);
+      throw new Error(`API error ${resp.status}: ${errData.error || 'Unknown'} ${errData.debug ? JSON.stringify(errData.debug) : ''}`);
+    }
     const parsed=await resp.json();
     if(parsed.error) throw new Error(parsed.error);
     ocrResult=parsed;

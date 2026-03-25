@@ -26,7 +26,16 @@ module.exports = async function handler(req, res) {
       image_length: image_base64?.length || 0,
       media_type: media_type
     });
-    if (!image_base64) return res.status(400).json({ error: 'No image provided' });
+    if (!image_base64) {
+      return res.status(400).json({ 
+        error: 'No image provided',
+        debug: {
+          has_body: !!req.body,
+          keys: req.body ? Object.keys(req.body) : [],
+          body_sample: req.body ? JSON.stringify(req.body).substring(0, 100) : 'no body'
+        }
+      });
+    }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
