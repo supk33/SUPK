@@ -1344,6 +1344,7 @@ async function doOCRScan(){
   sb.textContent='🤖 ส่งรูปให้ AI วิเคราะห์...\n';
   try{
     const b64=await new Promise((ok,err)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(',')[1]);r.onerror=err;r.readAsDataURL(ocrFile);});
+    console.log('Base64 length:', b64?.length, 'Media type:', ocrFile.type);
     sb.textContent+='📡 กำลังอ่านชื่อ โรงพยาบาล และวันที่...\n';
     const resp=await fetch('/api/ocr',{
       method:'POST',
