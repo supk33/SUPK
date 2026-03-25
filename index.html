@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0"></script>
 <style>
 :root{
   --pink:#ff6b9d;--orange:#ff8c42;--yellow:#ffd166;--green:#06d6a0;
@@ -745,16 +745,31 @@ function initSupabase(url, key) {
 
 // ===== AUTH =====
 async function signInWithGoogle() {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    showSetup(); return;
+  if (!sbClient) {
+    showSetup();
+    return;
   }
-  showLoader('กำลังเปิด Google Login...');
-  const { error } = await sbClient.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.href }
-  });
-  hideLoader();
-  if (error) toast('เกิดข้อผิดพลาด: ' + error.message, '❌');
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    toast('ยังไม่ได้ตั้งค่า Supabase — กด "ตั้งค่า Supabase" ด้านล่าง 🔧', '⚠️');
+    showSetup();
+    return;
+  }
+  try {
+    showLoader('กำลังเปิด Google Login...');
+    const { data, error } = await sbClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + window.location.pathname }
+    });
+    hideLoader();
+    if (error) {
+      console.error('Google OAuth Error:', error);
+      toast('❌ ' + error.message, '❌');
+    }
+  } catch (e) {
+    hideLoader();
+    console.error('Google login exception:', e);
+    toast('❌ เกิดข้อผิดพลาด: ' + e.message, '❌');
+  }
 }
 
 async function signOut() {
